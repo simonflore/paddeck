@@ -2,6 +2,8 @@
 
 A macOS app for turning a **Novation Launchpad X** into a fully customizable soundboard. Assign audio samples to pads, control RGB LEDs, trim waveforms, and perform live with an XY pitch/speed controller.
 
+![Soundboard Screenshot](screenshot.jpg)
+
 ## Features
 
 - **8x8 Pad Grid** — drag-and-drop audio files onto pads, rearrange by dragging between pads
