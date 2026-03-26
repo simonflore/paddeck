@@ -9,7 +9,7 @@ struct Sample: Codable, Identifiable, Sendable {
     var fileDuration: Double
 
     var effectiveDuration: Double {
-        (trimEnd ?? fileDuration) - trimStart
+        max(0, (trimEnd ?? fileDuration) - trimStart)
     }
 
     init(name: String, filename: String, fileDuration: Double) {
