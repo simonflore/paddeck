@@ -22,6 +22,45 @@ struct SoundboardApp: App {
                     #endif
                 }
                 .preferredColorScheme(.dark)
+                .onOpenURL { url in
+                    guard url.pathExtension == "soundboard" else { return }
+                    appState.handleOpenURL(url)
+                }
+                .alert(
+                    "Project Already Exists",
+                    isPresented: Binding(
+                        get: { appState.showBundleImportAlert },
+                        set: { appState.showBundleImportAlert = $0 }
+                    )
+                ) {
+                    Button("Replace") {
+                        if let existing = appState.pendingImport?.existingProject {
+                            appState.finalizeBundleImport(mode: .replace(existingID: existing.id))
+                        }
+                    }
+                    Button("Keep Both") {
+                        appState.finalizeBundleImport(mode: .keepBoth)
+                    }
+                    Button("Cancel", role: .cancel) {
+                        if let temp = appState.pendingImport?.tempDirectory {
+                            try? FileManager.default.removeItem(at: temp)
+                        }
+                        appState.pendingImport = nil
+                    }
+                } message: {
+                    Text("A project named \"\(appState.pendingImport?.project.name ?? "")\" already exists.")
+                }
+                .alert(
+                    "Import Failed",
+                    isPresented: Binding(
+                        get: { appState.showBundleImportError },
+                        set: { appState.showBundleImportError = $0 }
+                    )
+                ) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(appState.bundleImportError ?? "")
+                }
         }
         #if os(macOS)
         .windowStyle(.titleBar)
