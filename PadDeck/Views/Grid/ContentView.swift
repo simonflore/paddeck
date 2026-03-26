@@ -59,6 +59,9 @@ struct ContentView: View {
                 HStack(spacing: 12) {
                     // Play / Edit toggle
                     Button {
+                        if appState.activeInstrument != nil {
+                            appState.exitInstrumentMode()
+                        }
                         appState.isEditMode.toggle()
                     } label: {
                         HStack(spacing: 5) {

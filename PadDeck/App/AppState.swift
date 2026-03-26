@@ -87,8 +87,12 @@ final class AppState {
         midiManager.onDeviceConnected = { [weak self] in
             guard let self else { return }
             self.midiManager.enterProgrammerMode()
-            self.midiManager.syncLEDs(with: self.project, playingPads: self.audioEngine.activePads)
-            self.renderDryWetMeter()
+            if let active = self.activeInstrument {
+                self.renderInstrumentGrid(active.type)
+            } else {
+                self.midiManager.syncLEDs(with: self.project, playingPads: self.audioEngine.activePads)
+                self.renderDryWetMeter()
+            }
         }
         audioEngine.onPadStopped = { [weak self] position in
             guard let self else { return }
@@ -136,8 +140,8 @@ final class AppState {
 
         let pad = project.pad(at: position)
 
-        // Instrument pad: enter instrument mode
-        if pad.isInstrumentPad, let config = pad.instrumentConfig {
+        // Instrument pad: enter instrument mode (not during edit mode)
+        if pad.isInstrumentPad, let config = pad.instrumentConfig, !isEditMode {
             activeInstrument = ActiveInstrument(type: config.instrumentType, sourcePosition: position)
             instrumentEngine.loadInstrument(config.instrumentType)
             instrumentEngine.setVolume(config.volume, for: config.instrumentType)
