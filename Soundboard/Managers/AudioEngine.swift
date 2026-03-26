@@ -15,6 +15,15 @@ final class AudioEngine {
     private var fileCache: [String: AVAudioFile] = [:]
     private var loopBufferCache: [String: AVAudioPCMBuffer] = [:]
 
+    // Vocal mic chain
+    private let micGainNode = AVAudioMixerNode()
+    private let reverbNode = AVAudioUnitReverb()
+    private let delayNode = AVAudioUnitDelay()
+    private let vocalPitchNode = AVAudioUnitTimePitch()
+    private let distortionNode = AVAudioUnitDistortion()
+    private var activeVocalEffect: VocalEffect = .reverb
+    var globalMicGain: Float = 1.0
+
     private var recordingFile: AVAudioFile?
     private var recordingURL: URL?
 
@@ -182,17 +191,102 @@ final class AudioEngine {
         return recordingURL
     }
 
+    // MARK: - Vocal Mic
+
+    func setMicActive(_ active: Bool) {
+        micGainNode.volume = active ? globalMicGain : 0
+    }
+
+    func switchVocalEffect(to effect: VocalEffect) {
+        guard effect != activeVocalEffect else { return }
+
+        let oldNode = effectNode(for: activeVocalEffect)
+        let newNode = effectNode(for: effect)
+
+        // Disconnect old: micGainNode → oldNode → mixer
+        engine.disconnectNodeOutput(micGainNode)
+        engine.disconnectNodeOutput(oldNode)
+
+        // Connect new: micGainNode → newNode → mixer
+        engine.connect(micGainNode, to: newNode, format: nil)
+        engine.connect(newNode, to: mixer, format: nil)
+
+        activeVocalEffect = effect
+    }
+
+    func setVocalDryWet(_ value: Float) {
+        let node = effectNode(for: activeVocalEffect)
+        if let reverb = node as? AVAudioUnitReverb {
+            reverb.wetDryMix = value * 100
+        } else if let delay = node as? AVAudioUnitDelay {
+            delay.wetDryMix = value * 100
+        } else if let dist = node as? AVAudioUnitDistortion {
+            dist.wetDryMix = value * 100
+        }
+    }
+
+    func setMicGain(_ gain: Float) {
+        globalMicGain = gain
+        // Update live volume if mic is currently unmuted
+        if micGainNode.volume > 0 {
+            micGainNode.volume = gain
+        }
+    }
+
+    private func effectNode(for effect: VocalEffect) -> AVAudioNode {
+        switch effect {
+        case .reverb: reverbNode
+        case .delay: delayNode
+        case .pitchShift: vocalPitchNode
+        case .distortion: distortionNode
+        }
+    }
+
     // MARK: - Private
 
     private func setupEngine() {
         engine.attach(mixer)
         engine.connect(mixer, to: engine.mainMixerNode, format: nil)
+        setupMicChain()
         do {
             try engine.start()
             isEngineRunning = true
         } catch {
             print("AudioEngine failed to start: \(error)")
         }
+    }
+
+    private func setupMicChain() {
+        // Configure effect defaults
+        reverbNode.loadFactoryPreset(.largeHall2)
+        reverbNode.wetDryMix = 50
+
+        delayNode.delayTime = 0.3
+        delayNode.feedback = 30
+        delayNode.lowPassCutoff = 15000
+        delayNode.wetDryMix = 50
+
+        vocalPitchNode.pitch = 1200 // +1 octave
+
+        distortionNode.loadFactoryPreset(.speechWaves)
+        distortionNode.wetDryMix = 50
+
+        // Attach all nodes (but only connect the active effect)
+        engine.attach(micGainNode)
+        engine.attach(reverbNode)
+        engine.attach(delayNode)
+        engine.attach(vocalPitchNode)
+        engine.attach(distortionNode)
+
+        micGainNode.volume = 0 // Start muted
+
+        // Connect: inputNode → micGainNode → reverbNode (default) → mixer
+        let inputFormat = engine.inputNode.outputFormat(forBus: 0)
+        engine.connect(engine.inputNode, to: micGainNode, format: inputFormat)
+        engine.connect(micGainNode, to: reverbNode, format: nil)
+        engine.connect(reverbNode, to: mixer, format: nil)
+
+        activeVocalEffect = .reverb
     }
 
     private func playerNode(for position: GridPosition) -> AVAudioPlayerNode {
