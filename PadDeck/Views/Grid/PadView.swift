@@ -90,6 +90,21 @@ struct PadView: View {
                         .tracking(1)
 
                     Spacer(minLength: 0)
+                } else if pad.isInstrumentPad, let config = pad.instrumentConfig {
+                    Spacer(minLength: 0)
+
+                    Image(systemName: config.instrumentType.iconName)
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+
+                    Text(config.instrumentType.displayName.uppercased())
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .tracking(1)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 0)
                 } else if let sample = pad.sample {
                     Spacer(minLength: 0)
 
