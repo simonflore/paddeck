@@ -51,7 +51,7 @@ struct WaveformTrimView: View {
                 trimHandle(color: .cyan)
                     .offset(x: xPosition(for: trimStart, in: width) - handleWidth / 2)
                     .gesture(
-                        DragGesture()
+                        DragGesture(minimumDistance: 0, coordinateSpace: .named("waveform"))
                             .onChanged { value in
                                 isDraggingStart = true
                                 let newTime = timePosition(for: value.location.x, in: width)
@@ -64,7 +64,7 @@ struct WaveformTrimView: View {
                 trimHandle(color: .orange)
                     .offset(x: xPosition(for: effectiveEnd, in: width) - handleWidth / 2)
                     .gesture(
-                        DragGesture()
+                        DragGesture(minimumDistance: 0, coordinateSpace: .named("waveform"))
                             .onChanged { value in
                                 isDraggingEnd = true
                                 let newTime = timePosition(for: value.location.x, in: width)
@@ -73,6 +73,7 @@ struct WaveformTrimView: View {
                             .onEnded { _ in isDraggingEnd = false }
                     )
             }
+            .coordinateSpace(name: "waveform")
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
     }
