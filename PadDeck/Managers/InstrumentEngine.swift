@@ -2,6 +2,7 @@ import AVFoundation
 import Foundation
 
 @Observable
+@MainActor
 final class InstrumentEngine {
     private var samplers: [InstrumentType: AVAudioUnitSampler] = [:]
     private let audioEngine: AudioEngine
