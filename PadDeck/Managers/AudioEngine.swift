@@ -357,7 +357,8 @@ final class AudioEngine {
     #endif
 
     /// Attaches and connects the mic → effect → mixer chain.
-    /// Called lazily the first time a vocal pad is activated (engine is already running).
+    /// Called lazily the first time a vocal pad is activated or recording starts.
+    /// Must stop/restart the engine to safely wire inputNode on macOS.
     private func ensureMicChainConnected() {
         guard !isMicChainReady else { return }
 
@@ -384,11 +385,16 @@ final class AudioEngine {
 
         micGainNode.volume = 0
 
-        // Connect inputNode → micGainNode → default effect → mixer
-        // Engine is already running, so inputNode format is valid
+        // Stop the engine before wiring inputNode — accessing inputNode while
+        // the engine is running can deadlock on macOS (render thread holds the
+        // graph lock while main thread tries to reconfigure).
+        let wasRunning = engine.isRunning
+        if wasRunning { engine.stop() }
+
         let inputFormat = engine.inputNode.outputFormat(forBus: 0)
         guard inputFormat.channelCount > 0 else {
             print("[AudioEngine] No microphone input available — vocal chain disabled")
+            if wasRunning { try? engine.start() }
             return
         }
         engine.connect(engine.inputNode, to: micGainNode, format: inputFormat)
@@ -397,6 +403,8 @@ final class AudioEngine {
 
         activeVocalEffect = .reverb
         isMicChainReady = true
+
+        if wasRunning { try? engine.start() }
     }
 
     private func playerNode(for position: GridPosition) -> AVAudioPlayerNode {

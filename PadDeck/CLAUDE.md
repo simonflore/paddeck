@@ -57,7 +57,7 @@ Supports: Launchpad X, Mini MK3, Pro MK3, MK2, and Pro (original).
 - `InstrumentType` enum defines note layouts via `NoteLayout` (GridPosition → MIDI note mapping + LED colors)
 - Instrument mode: `AppState.activeInstrument` reroutes pad press/release to `InstrumentEngine.playNote`/`stopNote`
 - Side button 7 (top) exits instrument mode
-- Grid layouts: Piano/Marimba = chromatic (1 octave/row), Drums = 4×4 quadrant, Synth Lead/Pad = isomorphic 4ths (+5 semitones/row)
+- Grid layouts: All melodic instruments use isomorphic patterns — Piano = 4ths (+5/row, C2), Marimba = 3rds (+4/row, C3), Synth Lead = 4ths (+5/row, C3), Synth Pad = 5ths (+7/row, C2). Drums = full 8×8 GM percussion grid (rows 0-5 active, 6-7 off)
 
 ## Build
 

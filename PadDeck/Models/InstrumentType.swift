@@ -65,8 +65,24 @@ enum InstrumentType: String, Codable, CaseIterable, Identifiable, Sendable {
         case .piano: Self.pianoLayout()
         case .drums: Self.drumsLayout()
         case .marimba: Self.marimbaLayout()
-        case .synthLead: Self.isomorphicLayout(base: 48, brightColor: LaunchpadColor(r: 0, g: 127, b: 30), dimColor: LaunchpadColor(r: 0, g: 40, b: 10))
-        case .synthPad: Self.isomorphicLayout(base: 36, brightColor: LaunchpadColor(r: 100, g: 0, b: 127), dimColor: LaunchpadColor(r: 30, g: 0, b: 50))
+        case .synthLead: Self.isomorphicLayout(
+            base: 48, rowInterval: 5,
+            colorForNote: { note in
+                note % 12 == 0
+                    ? LaunchpadColor(r: 0, g: 127, b: 30)
+                    : LaunchpadColor(r: 0, g: 40, b: 10)
+            },
+            pressedColor: LaunchpadColor(r: 127, g: 127, b: 127)
+        )
+        case .synthPad: Self.isomorphicLayout(
+            base: 36, rowInterval: 7,
+            colorForNote: { note in
+                note % 12 == 0
+                    ? LaunchpadColor(r: 100, g: 0, b: 127)
+                    : LaunchpadColor(r: 30, g: 0, b: 50)
+            },
+            pressedColor: LaunchpadColor(r: 127, g: 127, b: 127)
+        )
         }
     }
 }
@@ -80,100 +96,116 @@ private extension InstrumentType {
     /// Black key semitones within an octave: C#=1, D#=3, F#=6, G#=8, A#=10
     static let blackKeys: Set<UInt8> = [1, 3, 6, 8, 10]
 
-    // MARK: Piano — chromatic, 1 octave per row, starting at C1 (MIDI 24)
+    // MARK: Piano — Isomorphic 4ths (Push-style), C2 base
 
     static func pianoLayout() -> NoteLayout {
-        NoteLayout(
-            noteForPosition: { pos in
-                let note = 24 + (pos.row * 12) + pos.column
-                guard note <= 108 else { return nil }  // Clamp at C8
-                return UInt8(note)
-            },
-            colorForPosition: { pos in
-                let note = 24 + (pos.row * 12) + pos.column
-                guard note <= 108 else { return .off }
+        isomorphicLayout(
+            base: 36, rowInterval: 5,
+            colorForNote: { note in
                 let semitone = UInt8(note % 12)
-                return blackKeys.contains(semitone)
-                    ? LaunchpadColor(r: 15, g: 15, b: 60)
-                    : LaunchpadColor(r: 100, g: 100, b: 100)
+                if semitone == 0 {
+                    // Root (C) — bright white
+                    return LaunchpadColor(r: 127, g: 127, b: 127)
+                } else if blackKeys.contains(semitone) {
+                    // Accidentals — dark blue
+                    return LaunchpadColor(r: 15, g: 15, b: 60)
+                } else {
+                    // Natural notes — medium blue-white
+                    return LaunchpadColor(r: 60, g: 60, b: 100)
+                }
             },
             pressedColor: LaunchpadColor(r: 127, g: 127, b: 127)
         )
     }
 
-    // MARK: Drums — 4×4 bottom-left quadrant mapped to GM percussion
-
-    static func drumsLayout() -> NoteLayout {
-        // Grid[row][col] → GM drum MIDI note
-        // Row 0 (bottom), Row 3 (top of quadrant)
-        let drumGrid: [[UInt8]] = [
-            [36, 35, 40, 43],  // Row 0: Kick, Kick2, SideStick, FloorTom
-            [38, 39, 37, 75],  // Row 1: Snare, Clap, Rimshot, Clave
-            [50, 47, 45, 56],  // Row 2: HiTom, MidTom, LowTom, Cowbell
-            [49, 51, 46, 42],  // Row 3: Crash, Ride, OpenHH, ClosedHH
-        ]
-
-        // Color per drum note category
-        let drumColor: (UInt8) -> LaunchpadColor = { note in
-            switch note {
-            case 35, 36: return LaunchpadColor(r: 127, g: 20, b: 0)    // Kicks: red
-            case 37, 38, 39, 40: return LaunchpadColor(r: 127, g: 60, b: 0) // Snares: orange
-            case 42, 44, 46: return LaunchpadColor(r: 127, g: 127, b: 0)   // Hi-hats: yellow
-            case 49, 51, 52, 55: return LaunchpadColor(r: 0, g: 127, b: 127) // Cymbals: cyan
-            case 43, 45, 47, 48, 50: return LaunchpadColor(r: 0, g: 127, b: 20) // Toms: green
-            default: return LaunchpadColor(r: 80, g: 0, b: 127)             // Percussion: purple
-            }
-        }
-
-        return NoteLayout(
-            noteForPosition: { pos in
-                guard pos.row < 4, pos.column < 4 else { return nil }
-                return drumGrid[pos.row][pos.column]
-            },
-            colorForPosition: { pos in
-                guard pos.row < 4, pos.column < 4 else { return .off }
-                return drumColor(drumGrid[pos.row][pos.column])
-            },
-            pressedColor: LaunchpadColor(r: 127, g: 127, b: 127)
-        )
-    }
-
-    // MARK: Marimba — chromatic, 1 octave per row, starting at F2 (MIDI 41)
+    // MARK: Marimba — Isomorphic major 3rds, C3 base
 
     static func marimbaLayout() -> NoteLayout {
-        NoteLayout(
-            noteForPosition: { pos in
-                let note = 41 + (pos.row * 12) + pos.column
-                guard note <= 127 else { return nil }
-                return UInt8(note)
-            },
-            colorForPosition: { pos in
-                let note = 41 + (pos.row * 12) + pos.column
-                guard note <= 127 else { return .off }
+        isomorphicLayout(
+            base: 48, rowInterval: 4,
+            colorForNote: { note in
                 let semitone = UInt8(note % 12)
-                return blackKeys.contains(semitone)
-                    ? LaunchpadColor(r: 50, g: 25, b: 5)
-                    : LaunchpadColor(r: 127, g: 70, b: 10)
+                if semitone == 0 {
+                    return LaunchpadColor(r: 127, g: 80, b: 10)
+                } else if blackKeys.contains(semitone) {
+                    return LaunchpadColor(r: 50, g: 25, b: 5)
+                } else {
+                    return LaunchpadColor(r: 100, g: 55, b: 8)
+                }
             },
             pressedColor: LaunchpadColor(r: 127, g: 120, b: 80)
         )
     }
 
-    // MARK: Isomorphic 4ths — each row +5 semitones (used by Synth Lead and Synth Pad)
+    // MARK: Drums — Full 8×8 grid, GM percussion (rows 0-5 active, 6-7 off)
 
-    static func isomorphicLayout(base: Int, brightColor: LaunchpadColor, dimColor: LaunchpadColor) -> NoteLayout {
+    static func drumsLayout() -> NoteLayout {
+        // Grid[row][col] → GM drum MIDI note
+        // Row 0 (bottom) = core kit, rows go up through Latin/FX
+        let drumGrid: [[UInt8?]] = [
+            [36, 38, 40, 37, 39, 42, 44, 46],       // Row 0: Kick, Snare, ElSnare, Rimshot, Clap, ClHH, PedalHH, OpenHH
+            [35, 41, 43, 45, 47, 48, 50, 56],       // Row 1: Kick2, LoFlrTom, HiFlrTom, LoTom, LoMidTom, HiMidTom, HiTom, Cowbell
+            [49, 57, 52, 55, 51, 59, 53, 54],       // Row 2: Crash1, Crash2, China, Splash, Ride1, Ride2, RideBell, Tamb
+            [60, 61, 62, 63, 64, 75, 76, 77],       // Row 3: HiBongo, LoBongo, MuHiConga, OpHiConga, LoConga, Claves, HiWdBlk, LoWdBlk
+            [65, 66, 67, 68, 69, 70, 58, 71],       // Row 4: HiTimb, LoTimb, HiAgogo, LoAgogo, Cabasa, Maracas, Vibraslap, ShWhistle
+            [72, 73, 74, 78, 79, 80, 81, nil],      // Row 5: LgWhistle, ShGuiro, LgGuiro, MuCuica, OpCuica, MuTri, OpTri, --
+            [nil, nil, nil, nil, nil, nil, nil, nil], // Row 6: inactive
+            [nil, nil, nil, nil, nil, nil, nil, nil], // Row 7: inactive
+        ]
+
+        let drumColor: (UInt8) -> LaunchpadColor = { note in
+            switch note {
+            case 35, 36:
+                return LaunchpadColor(r: 127, g: 20, b: 0)      // Kicks: red
+            case 37, 38, 39, 40:
+                return LaunchpadColor(r: 127, g: 60, b: 0)      // Snares/Clap: orange
+            case 42, 44, 46:
+                return LaunchpadColor(r: 127, g: 127, b: 0)     // Hi-hats: yellow
+            case 49, 51, 52, 53, 55, 57, 59:
+                return LaunchpadColor(r: 0, g: 100, b: 127)     // Cymbals/Ride: cyan
+            case 41, 43, 45, 47, 48, 50:
+                return LaunchpadColor(r: 0, g: 127, b: 20)      // Toms: green
+            case 54, 56:
+                return LaunchpadColor(r: 127, g: 100, b: 0)     // Tamb/Cowbell: gold
+            default:
+                return LaunchpadColor(r: 80, g: 0, b: 127)      // Latin/Percussion: purple
+            }
+        }
+
+        return NoteLayout(
+            noteForPosition: { pos in
+                guard pos.row < drumGrid.count else { return nil }
+                return drumGrid[pos.row][pos.column]
+            },
+            colorForPosition: { pos in
+                guard pos.row < drumGrid.count,
+                      let note = drumGrid[pos.row][pos.column] else { return .off }
+                return drumColor(note)
+            },
+            pressedColor: LaunchpadColor(r: 127, g: 127, b: 127)
+        )
+    }
+
+    // MARK: Isomorphic layout — configurable row interval
+
+    static func isomorphicLayout(
+        base: Int,
+        rowInterval: Int,
+        colorForNote: @Sendable @escaping (Int) -> LaunchpadColor,
+        pressedColor: LaunchpadColor
+    ) -> NoteLayout {
         NoteLayout(
             noteForPosition: { pos in
-                let note = base + (pos.row * 5) + pos.column
-                guard note <= 127 else { return nil }
+                let note = base + (pos.row * rowInterval) + pos.column
+                guard note >= 0, note <= 127 else { return nil }
                 return UInt8(note)
             },
             colorForPosition: { pos in
-                let note = base + (pos.row * 5) + pos.column
-                guard note <= 127 else { return .off }
-                return pos.column == 0 ? brightColor : dimColor
+                let note = base + (pos.row * rowInterval) + pos.column
+                guard note >= 0, note <= 127 else { return .off }
+                return colorForNote(note)
             },
-            pressedColor: LaunchpadColor(r: 127, g: 127, b: 127)
+            pressedColor: pressedColor
         )
     }
 }

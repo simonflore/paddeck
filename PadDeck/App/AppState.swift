@@ -96,7 +96,16 @@ final class AppState {
         }
         audioEngine.onPadStopped = { [weak self] position in
             guard let self else { return }
+            #if DEBUG
+            if self.activeInstrument != nil {
+                print("[Instrument] WARNING: onPadStopped fired during instrument mode for \(position) — syncLEDs will overwrite grid")
+            }
+            #endif
             self.textScroller.cancel()
+            if self.activeInstrument != nil {
+                // Don't overwrite instrument grid when a leftover sample finishes
+                return
+            }
             self.midiManager.syncLEDs(with: self.project, playingPads: self.audioEngine.activePads)
         }
     }
