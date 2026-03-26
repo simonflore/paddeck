@@ -72,7 +72,21 @@ struct PadView: View {
 
             // Content
             VStack(spacing: 0) {
-                if let sample = pad.sample {
+                if pad.isVocalPad {
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+
+                    Text("VOCAL")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .tracking(1)
+
+                    Spacer(minLength: 0)
+                } else if let sample = pad.sample {
                     Spacer(minLength: 0)
 
                     if let emoji = pad.emoji {
@@ -203,6 +217,7 @@ struct PadView: View {
         }
         var padConfig = pad
         padConfig.sample = sample
+        padConfig.vocalConfig = nil
         if padConfig.color == .off {
             padConfig.color = .defaultLoaded
         }
