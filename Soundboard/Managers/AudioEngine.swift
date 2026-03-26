@@ -146,6 +146,12 @@ final class AudioEngine {
     // MARK: - Recording
 
     func startRecording() throws -> URL {
+        if isRecording {
+            engine.inputNode.removeTap(onBus: 0)
+            recordingFile = nil
+            isRecording = false
+        }
+
         let url = sampleStore.generateRecordingURL()
         let inputNode = engine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
