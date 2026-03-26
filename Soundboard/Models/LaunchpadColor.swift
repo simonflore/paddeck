@@ -17,6 +17,7 @@ struct LaunchpadColor: Codable, Hashable, Sendable {
     static let defaultLoaded = LaunchpadColor(r: 10, g: 50, b: 127)
     static let playing = LaunchpadColor(r: 0, g: 127, b: 0)
     static let recording = LaunchpadColor(r: 127, g: 0, b: 0)
+    static let vocal = LaunchpadColor(r: 127, g: 0, b: 80)
 
     // Vibrant sport-event presets — punchy, saturated, arena-ready
     static let presets: [LaunchpadColor] = [

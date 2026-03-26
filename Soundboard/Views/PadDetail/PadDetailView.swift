@@ -502,7 +502,7 @@ struct PadDetailView: View {
         var padConfig = pad
         padConfig.vocalConfig = VocalPadConfig()
         padConfig.sample = nil
-        padConfig.color = LaunchpadColor(r: 127, g: 0, b: 80) // magenta
+        padConfig.color = .vocal
         appState.updatePad(padConfig, at: position)
     }
 
