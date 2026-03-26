@@ -59,6 +59,7 @@ struct ContentView: View {
 
                         // Stop All button
                         Button {
+                            appState.deactivateMic()
                             appState.audioEngine.stopAll()
                             appState.midiManager.syncLEDs(with: appState.project, playingPads: appState.audioEngine.activePads)
                         } label: {
