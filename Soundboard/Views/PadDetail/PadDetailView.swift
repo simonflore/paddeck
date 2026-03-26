@@ -1,6 +1,17 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+// MARK: - EffectOption Protocol
+
+protocol EffectOption: Identifiable {
+    var displayName: String { get }
+    var iconName: String { get }
+}
+
+extension PlayMode: EffectOption {}
+extension VocalEffect: EffectOption {}
+extension VocalActivationMode: EffectOption {}
+
 struct PadDetailView: View {
     @Environment(AppState.self) private var appState
 
@@ -17,7 +28,8 @@ struct PadDetailView: View {
     }
 
     private var accentColor: Color {
-        pad.isEmpty ? .blue : pad.color.swiftUIColor
+        if pad.isVocalPad { return .purple }
+        return pad.isEmpty ? .blue : pad.color.swiftUIColor
     }
 
     var body: some View {
@@ -31,7 +43,15 @@ struct PadDetailView: View {
                             .foregroundStyle(.secondary)
                             .tracking(1.5)
 
-                        if let sample = pad.sample {
+                        if pad.isVocalPad {
+                            HStack(spacing: 4) {
+                                Image(systemName: "mic.fill")
+                                    .font(.system(size: 14))
+                                Text("Live Vocal")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(.purple)
+                        } else if let sample = pad.sample {
                             Text(sample.name)
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                                 .foregroundStyle(.primary)
@@ -66,7 +86,107 @@ struct PadDetailView: View {
                     .buttonStyle(.plain)
                 }
 
-                if let sample = pad.sample {
+                if pad.isVocalPad, let vocalConfig = pad.vocalConfig {
+                    // Effect selector
+                    DetailSection(title: "EFFECT", icon: "waveform.path.ecg") {
+                        HStack(spacing: 6) {
+                            ForEach(VocalEffect.allCases) { effect in
+                                PlayModeButton(
+                                    mode: effect,
+                                    isSelected: vocalConfig.effect == effect,
+                                    accentColor: accentColor
+                                ) {
+                                    var p = pad
+                                    p.vocalConfig?.effect = effect
+                                    appState.updatePad(p, at: position)
+                                }
+                            }
+                        }
+                    }
+
+                    // Activation mode
+                    DetailSection(title: "ACTIVATION", icon: "hand.tap") {
+                        HStack(spacing: 6) {
+                            ForEach(VocalActivationMode.allCases) { mode in
+                                PlayModeButton(
+                                    mode: mode,
+                                    isSelected: vocalConfig.activationMode == mode,
+                                    accentColor: accentColor
+                                ) {
+                                    var p = pad
+                                    p.vocalConfig?.activationMode = mode
+                                    appState.updatePad(p, at: position)
+                                }
+                            }
+                        }
+                    }
+
+                    // Dry/Wet slider
+                    DetailSection(title: "DRY / WET", icon: "slider.horizontal.3") {
+                        HStack(spacing: 8) {
+                            Text("Dry")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.secondary)
+
+                            Slider(value: Binding(
+                                get: { vocalConfig.dryWetMix },
+                                set: { newVal in
+                                    var p = pad
+                                    p.vocalConfig?.dryWetMix = newVal
+                                    appState.updatePad(p, at: position)
+                                }
+                            ), in: 0...1)
+                            .tint(accentColor)
+
+                            Text("Wet")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.secondary)
+
+                            Text("\(Int(vocalConfig.dryWetMix * 100))%")
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 38, alignment: .trailing)
+                        }
+                    }
+
+                    // Color
+                    DetailSection(title: "COLOR", icon: "paintpalette") {
+                        ColorPickerView(color: Binding(
+                            get: { pad.color },
+                            set: { newColor in
+                                var p = pad
+                                p.color = newColor
+                                appState.updatePad(p, at: position)
+                            }
+                        ))
+                    }
+
+                    // Remove vocal action
+                    HStack {
+                        Spacer()
+                        Button {
+                            var p = pad
+                            p.vocalConfig = nil
+                            p.color = .off
+                            appState.updatePad(p, at: position)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 10))
+                                Text("Remove Vocal")
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Color.red.opacity(0.1))
+                            .foregroundStyle(.red)
+                            .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 4)
+
+                } else if let sample = pad.sample {
                     // Emoji
                     DetailSection(title: "EMOJI", icon: "face.smiling") {
                         HStack(spacing: 10) {
@@ -278,6 +398,40 @@ struct PadDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 30)
 
+                    // Live Vocal button
+                    DetailSection(title: "LIVE VOCAL", icon: "mic.fill") {
+                        Button {
+                            assignVocalPad()
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "mic.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.purple)
+
+                                Text("Assign as Live Vocal")
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.purple.opacity(0.6))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.purple.opacity(0.08))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(Color.purple.opacity(0.2), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     // Factory samples
                     DetailSection(title: "FACTORY SAMPLES", icon: "waveform.circle") {
                         VStack(spacing: 6) {
@@ -316,6 +470,7 @@ struct PadDetailView: View {
         }
         var padConfig = pad
         padConfig.sample = sample
+        padConfig.vocalConfig = nil
         if padConfig.color == .off {
             padConfig.color = .defaultLoaded
         }
@@ -332,6 +487,22 @@ struct PadDetailView: View {
         padConfig.sample = sample
         padConfig.color = preset.color
         padConfig.playMode = .oneShotStopOnRelease
+        appState.updatePad(padConfig, at: position)
+    }
+
+    private func assignVocalPad() {
+        // If another pad is already vocal, clear it
+        if let existingPos = appState.vocalPadPosition, existingPos != position {
+            var oldPad = appState.project.pad(at: existingPos)
+            oldPad.vocalConfig = nil
+            oldPad.color = .off
+            appState.updatePad(oldPad, at: existingPos)
+        }
+
+        var padConfig = pad
+        padConfig.vocalConfig = VocalPadConfig()
+        padConfig.sample = nil
+        padConfig.color = LaunchpadColor(r: 127, g: 0, b: 80) // magenta
         appState.updatePad(padConfig, at: position)
     }
 
@@ -369,8 +540,8 @@ struct DetailSection<Content: View>: View {
 
 // MARK: - Play Mode Button
 
-struct PlayModeButton: View {
-    let mode: PlayMode
+struct PlayModeButton<Option: EffectOption>: View {
+    let mode: Option
     let isSelected: Bool
     let accentColor: Color
     let action: () -> Void
