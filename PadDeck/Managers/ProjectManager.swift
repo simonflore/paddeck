@@ -1,6 +1,7 @@
 import Foundation
 
 @Observable
+@MainActor
 final class ProjectManager {
     private(set) var availableProjects: [ProjectMetadata] = []
 
