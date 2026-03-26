@@ -3,14 +3,16 @@ import SwiftUI
 @main
 struct PadDeckApp: App {
     @State private var appState = AppState()
+    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(appState)
-                .onAppear {
-                    appState.setupMIDICallbacks()
-                    appState.connectLaunchpad()
+            ZStack {
+                ContentView()
+                    .environment(appState)
+                    .onAppear {
+                        appState.setupMIDICallbacks()
+                        appState.connectLaunchpad()
 
                     #if os(macOS)
                     // Force dark appearance for the neon arena aesthetic
@@ -61,6 +63,20 @@ struct PadDeckApp: App {
                 } message: {
                     Text(appState.bundleImportError ?? "")
                 }
+
+                if showSplash {
+                    SplashScreenView()
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        showSplash = false
+                    }
+                }
+            }
         }
         #if os(macOS)
         .windowStyle(.titleBar)
