@@ -259,6 +259,7 @@ final class MIDIManager {
 
             // MIDI 1.0 channel voice message in UMP format
             // Word format: [messageType(4) group(4) status(8) note(8) velocity(8)]
+            print("[MIDI-UMP] word=0x\(String(firstWord, radix:16, uppercase:true))")
             let messageType = (firstWord >> 28) & 0x0F
             let status = (firstWord >> 16) & 0xFF
             let note = UInt8((firstWord >> 8) & 0xFF)
@@ -266,6 +267,7 @@ final class MIDIManager {
 
             if messageType == 0x02 { // MIDI 1.0 channel voice
                 let statusHigh = status & 0xF0
+                print("[MIDI-RAW] type=0x\(String(messageType, radix:16)) status=0x\(String(status, radix:16)) note=\(note) vel=\(velocity)")
                 if statusHigh == 0x90 && velocity > 0 { // Note On
                     if let position = GridPosition.from(midiNote: note) {
                         DispatchQueue.main.async(qos: .userInteractive) { [weak self] in
