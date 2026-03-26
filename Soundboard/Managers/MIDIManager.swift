@@ -284,7 +284,7 @@ final class MIDIManager {
     }
 
     private func sendSysEx(_ data: [UInt8]) {
-        guard connectedDestination != 0 else { return }
+        guard connectedDestination != 0, outputPort != 0 else { return }
 
         let count = data.count
         let dataCopy = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: count)
@@ -298,8 +298,6 @@ final class MIDIManager {
             complete: false,
             reserved: (0, 0, 0),
             completionProc: { ptr in
-                // CoreMIDI advances .data during send, so use the original
-                // base address saved in completionRefCon
                 ptr.pointee.completionRefCon!
                     .assumingMemoryBound(to: UInt8.self)
                     .deallocate()
@@ -309,7 +307,13 @@ final class MIDIManager {
             completionRefCon: UnsafeMutableRawPointer(dataCopy.baseAddress!)
         ))
 
-        MIDISendSysex(requestPtr)
+        let status = MIDISendSysex(requestPtr)
+        if status != noErr {
+            // Completion proc will NOT be called — free manually
+            dataCopy.deallocate()
+            requestPtr.deinitialize(count: 1)
+            requestPtr.deallocate()
+        }
     }
 
     private func getMIDIName(_ endpoint: MIDIEndpointRef) -> String? {
