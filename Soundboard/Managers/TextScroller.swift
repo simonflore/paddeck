@@ -20,37 +20,42 @@ final class TextScroller {
     ) {
         scrollTask?.cancel()
         scrollTask = Task { @MainActor in
-            defer { restoreColors() }
-
             let columns = renderTextColumns(text.uppercased())
-            let totalFrames = columns.count + 8 // scroll fully off screen
+            let totalFrames = columns.count + 8
 
-            for frame in 0..<totalFrames {
-                try Task.checkCancellation()
+            do {
+                for frame in 0..<totalFrames {
+                    try Task.checkCancellation()
 
-                let active = activePads()
-                var entries: [(note: UInt8, r: UInt8, g: UInt8, b: UInt8)] = []
-                for row in 0..<8 {
-                    for col in 0..<8 {
-                        let sourceCol = frame + col
-                        let isLit = sourceCol < columns.count && row < columns[sourceCol].count && columns[sourceCol][row]
-                        let pos = GridPosition(row: 7 - row, column: col)
-                        if isLit {
-                            entries.append((note: pos.midiNote, r: textColor.r, g: textColor.g, b: textColor.b))
-                        } else if active.contains(pos) {
-                            let c = project.pad(at: pos).color
-                            entries.append((note: pos.midiNote, r: c.r, g: c.g, b: c.b))
-                        } else {
-                            let c = project.pad(at: pos).color
-                            entries.append((note: pos.midiNote, r: c.r / 4, g: c.g / 4, b: c.b / 4))
+                    let active = activePads()
+                    var entries: [(note: UInt8, r: UInt8, g: UInt8, b: UInt8)] = []
+                    for row in 0..<8 {
+                        for col in 0..<8 {
+                            let sourceCol = frame + col
+                            let isLit = sourceCol < columns.count && row < columns[sourceCol].count && columns[sourceCol][row]
+                            let pos = GridPosition(row: 7 - row, column: col)
+                            if isLit {
+                                entries.append((note: pos.midiNote, r: textColor.r, g: textColor.g, b: textColor.b))
+                            } else if active.contains(pos) {
+                                let c = project.pad(at: pos).color
+                                entries.append((note: pos.midiNote, r: c.r, g: c.g, b: c.b))
+                            } else {
+                                let c = project.pad(at: pos).color
+                                entries.append((note: pos.midiNote, r: c.r / 4, g: c.g / 4, b: c.b / 4))
+                            }
                         }
                     }
+
+                    midiManager?.sendBatchLEDs(entries: entries)
+
+                    try await Task.sleep(for: .milliseconds(80))
                 }
 
-                midiManager?.sendBatchLEDs(entries: entries)
+                // Wait for the last SysEx to deliver before restoring
+                try await Task.sleep(for: .milliseconds(100))
+            } catch {}
 
-                try await Task.sleep(for: .milliseconds(80))
-            }
+            restoreColors()
         }
     }
 
