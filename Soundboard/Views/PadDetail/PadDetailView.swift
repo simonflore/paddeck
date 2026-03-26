@@ -5,7 +5,11 @@ struct PadDetailView: View {
     @Environment(AppState.self) private var appState
 
     private var position: GridPosition {
-        appState.selectedPad ?? GridPosition(row: 0, column: 0)
+        guard let pos = appState.selectedPad else {
+            assertionFailure("PadDetailView shown with nil selectedPad")
+            return GridPosition(row: 0, column: 0)
+        }
+        return pos
     }
 
     private var pad: PadConfiguration {
