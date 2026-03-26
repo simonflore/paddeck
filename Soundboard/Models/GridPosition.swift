@@ -8,13 +8,13 @@ struct GridPosition: Hashable, Codable, Identifiable, Sendable {
 
     var id: Int { row * 8 + column }
 
-    /// Launchpad X programmer mode note number.
+    /// Launchpad programmer mode note number (all supported models).
     /// Row 0 (bottom) = notes 11-18, row 7 (top) = notes 81-88.
     var midiNote: UInt8 {
         UInt8((row + 1) * 10 + (column + 1))
     }
 
-    /// Create from a Launchpad X programmer mode note number.
+    /// Create from a Launchpad programmer mode note number.
     static func from(midiNote: UInt8) -> GridPosition? {
         let note = Int(midiNote)
         let row = (note / 10) - 1

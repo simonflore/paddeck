@@ -12,8 +12,10 @@ struct MIDIDeviceInfo: Identifiable, Hashable {
 final class MIDIManager {
     private(set) var isConnected = false
     private(set) var deviceName = "No device"
+    private(set) var detectedModel: LaunchpadModel?
     private(set) var availableDevices: [MIDIDeviceInfo] = []
 
+    private var lpProtocol: LaunchpadProtocol?
     private var midiClient: MIDIClientRef = 0
     private var outputPort: MIDIPortRef = 0
     private var inputPort: MIDIPortRef = 0
@@ -22,7 +24,8 @@ final class MIDIManager {
 
     var onPadPressed: ((GridPosition, UInt8) -> Void)?
     var onPadReleased: ((GridPosition) -> Void)?
-    var onSideButtonPressed: ((UInt8) -> Void)?
+    /// Called with the logical side button index (0 = bottom, 7 = top).
+    var onSideButtonPressed: ((Int) -> Void)?
     var onDeviceConnected: (() -> Void)?
 
     init() {
@@ -55,14 +58,15 @@ final class MIDIManager {
         for i in 0..<sourceCount {
             let source = MIDIGetSource(i)
             guard let name = getMIDIName(source) else { continue }
+            let isLaunchpad = LaunchpadModel.detect(from: name) != nil
             #if DEBUG
-            print("[MIDI]   source[\(i)]: \"\(name)\" (match: \(isLaunchpadName(name)))")
+            print("[MIDI]   source[\(i)]: \"\(name)\" (match: \(isLaunchpad))")
             #endif
-            guard isLaunchpadName(name) else { continue }
+            guard isLaunchpad else { continue }
 
             // Pair source with destination by matching port type (MIDI↔MIDI, DAW↔DAW)
             let portType = portSuffix(name)
-            if let dest = destMap.first(where: { isLaunchpadName($0.key) && portSuffix($0.key) == portType })?.value {
+            if let dest = destMap.first(where: { LaunchpadModel.detect(from: $0.key) != nil && portSuffix($0.key) == portType })?.value {
                 devices.append(MIDIDeviceInfo(
                     id: Int(source),
                     name: name,
@@ -93,11 +97,6 @@ final class MIDIManager {
         }
     }
 
-    private func isLaunchpadName(_ name: String) -> Bool {
-        let lower = name.lowercased()
-        return lower.contains("launchpad") || lower.contains("lpx") || lower.contains("lpmini")
-    }
-
     /// Returns "midi" or "daw" to pair matching source/destination ports
     private func portSuffix(_ name: String) -> String {
         let lower = name.lowercased()
@@ -111,10 +110,17 @@ final class MIDIManager {
         connectedSource = device.source
         connectedDestination = device.destination
 
+        let model = LaunchpadModel.detect(from: device.name)
+        detectedModel = model
+        lpProtocol = model.map { LaunchpadProtocol(model: $0) }
+
         let status = MIDIPortConnectSource(inputPort, connectedSource, nil)
         if status == noErr {
             isConnected = true
-            deviceName = device.name
+            deviceName = model?.displayName ?? device.name
+            #if DEBUG
+            print("[MIDI] Connected: \(deviceName) (model: \(model?.rawValue ?? "unknown"))")
+            #endif
         }
     }
 
@@ -124,31 +130,38 @@ final class MIDIManager {
         }
         isConnected = false
         deviceName = "No device"
+        detectedModel = nil
+        lpProtocol = nil
         connectedSource = 0
         connectedDestination = 0
     }
 
     func enterProgrammerMode() {
-        sendSysEx(LaunchpadProtocol.programmerModeMessage())
+        guard let msg = lpProtocol?.programmerModeMessage() else { return }
+        sendSysEx(msg)
     }
 
     func exitProgrammerMode() {
-        sendSysEx(LaunchpadProtocol.liveModeMessage())
+        guard let msg = lpProtocol?.liveModeMessage() else { return }
+        sendSysEx(msg)
     }
 
     func setLED(at position: GridPosition, color: LaunchpadColor) {
-        sendSysEx(LaunchpadProtocol.rgbLEDMessage(
+        guard let proto = lpProtocol else { return }
+        sendSysEx(proto.rgbLEDMessage(
             note: position.midiNote, r: color.r, g: color.g, b: color.b
         ))
     }
 
     func setLEDPulsing(at position: GridPosition, colorIndex: UInt8) {
-        sendSysEx(LaunchpadProtocol.paletteLEDMessage(
+        guard let proto = lpProtocol else { return }
+        sendSysEx(proto.paletteLEDMessage(
             note: position.midiNote, type: 2, colorIndex: colorIndex
         ))
     }
 
     func clearAllLEDs() {
+        guard let proto = lpProtocol else { return }
         var entries: [(note: UInt8, r: UInt8, g: UInt8, b: UInt8)] = []
         for row in 0..<8 {
             for col in 0..<8 {
@@ -156,30 +169,36 @@ final class MIDIManager {
                 entries.append((note: pos.midiNote, r: 0, g: 0, b: 0))
             }
         }
-        sendSysEx(LaunchpadProtocol.batchRGBMessage(entries: entries))
+        sendSysEx(proto.batchRGBMessage(entries: entries))
     }
 
     func syncLEDs(with project: Project, playingPads: Set<GridPosition>) {
+        guard let proto = lpProtocol else { return }
         var entries: [(note: UInt8, r: UInt8, g: UInt8, b: UInt8)] = []
         for pad in project.pads {
             let color = playingPads.contains(pad.position) ? LaunchpadColor.playing : pad.color
             entries.append((note: pad.position.midiNote, r: color.r, g: color.g, b: color.b))
         }
-        sendSysEx(LaunchpadProtocol.batchRGBMessage(entries: entries))
+        sendSysEx(proto.batchRGBMessage(entries: entries))
     }
 
     func sendBatchLEDs(entries: [(note: UInt8, r: UInt8, g: UInt8, b: UInt8)]) {
-        sendSysEx(LaunchpadProtocol.batchRGBMessage(entries: entries))
+        guard let proto = lpProtocol else { return }
+        sendSysEx(proto.batchRGBMessage(entries: entries))
     }
 
-    /// Set a side button LED (notes 19, 29, ..., 89).
-    func setSideButtonLED(note: UInt8, color: LaunchpadColor) {
-        sendSysEx(LaunchpadProtocol.rgbLEDMessage(note: note, r: color.r, g: color.g, b: color.b))
+    /// Set a side button LED by logical index (0 = bottom, 7 = top).
+    func setSideButtonLED(index: Int, color: LaunchpadColor) {
+        guard let proto = lpProtocol else { return }
+        let note = Self.sideButtonNote(for: index)
+        sendSysEx(proto.rgbLEDMessage(note: note, r: color.r, g: color.g, b: color.b))
     }
 
     /// Render XY performance grid: X = pentatonic notes (colored per scale degree), Y = volume (dim→bright).
     /// Cursor position gets a white highlight.
     func renderXYGrid(cursor: GridPosition?) {
+        guard let proto = lpProtocol else { return }
+
         // Colors per pentatonic column: blue→cyan→green→yellow→orange, repeating for octave
         let noteColors: [(r: UInt8, g: UInt8, b: UInt8)] = [
             (0, 20, 127),   // C  — blue
@@ -209,7 +228,22 @@ final class MIDIManager {
                 entries.append((note: pos.midiNote, r: r, g: g, b: b))
             }
         }
-        sendSysEx(LaunchpadProtocol.batchRGBMessage(entries: entries))
+        sendSysEx(proto.batchRGBMessage(entries: entries))
+    }
+
+    // MARK: - Side Button Mapping
+
+    /// Right-column side button notes: 19, 29, 39, 49, 59, 69, 79, 89.
+    /// Index 0 = bottom (note 19), index 7 = top (note 89).
+    static func sideButtonNote(for index: Int) -> UInt8 {
+        UInt8((index + 1) * 10 + 9)
+    }
+
+    /// Returns the logical side button index (0-7) if the note is a right-column button, nil otherwise.
+    private static func sideButtonIndex(from note: UInt8) -> Int? {
+        let n = Int(note)
+        guard n % 10 == 9, (1...8).contains(n / 10) else { return nil }
+        return (n / 10) - 1
     }
 
     // MARK: - Private
@@ -265,6 +299,10 @@ final class MIDIManager {
                         DispatchQueue.main.async(qos: .userInteractive) { [weak self] in
                             self?.onPadPressed?(position, velocity)
                         }
+                    } else if let index = Self.sideButtonIndex(from: note) {
+                        DispatchQueue.main.async(qos: .userInteractive) { [weak self] in
+                            self?.onSideButtonPressed?(index)
+                        }
                     }
                 } else if statusHigh == 0x80 || (statusHigh == 0x90 && velocity == 0) { // Note Off
                     if let position = GridPosition.from(midiNote: note) {
@@ -272,11 +310,9 @@ final class MIDIManager {
                             self?.onPadReleased?(position)
                         }
                     }
-                } else if statusHigh == 0xB0 && velocity > 0 { // Control Change (side/top buttons)
-                    DispatchQueue.main.async(qos: .userInteractive) { [weak self] in
-                        self?.onSideButtonPressed?(note)
-                    }
                 }
+                // CC messages (0xB0) from top-row buttons (CC 91-98) are not routed currently.
+                // Wire up an onTopButtonPressed callback here if needed in the future.
             }
 
             packet = MIDIEventPacketNext(&packet).pointee

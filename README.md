@@ -1,13 +1,13 @@
 # Soundboard
 
-A macOS app for turning a **Novation Launchpad X** into a fully customizable soundboard. Assign audio samples to pads, control RGB LEDs, trim waveforms, and perform live with an XY pitch/speed controller.
+A macOS app for turning a **Novation Launchpad** into a fully customizable soundboard. Assign audio samples to pads, control RGB LEDs, trim waveforms, and perform live with an XY pitch/speed controller. Supports **Launchpad X**, **Mini MK3**, **Pro MK3**, **MK2**, and **Pro**.
 
 ![Soundboard Screenshot](screenshot.jpg)
 
 ## Features
 
 - **8x8 Pad Grid** — drag-and-drop audio files onto pads, rearrange by dragging between pads
-- **Launchpad X Integration** — real-time LED color sync, programmer mode SysEx, velocity-sensitive playback via Force Touch
+- **Multi-Model Launchpad Support** — auto-detects Launchpad X, Mini MK3, Pro MK3, MK2, and Pro; real-time LED color sync, programmer mode SysEx, velocity-sensitive playback via Force Touch
 - **Audio Engine** — AVAudioEngine-based playback with per-pad volume, one-shot / loop / hold play modes
 - **Waveform Trimming** — visual trim editor with start/end handles
 - **XY Performance Mode** — 2D pad controller for live pitch and speed manipulation
@@ -21,7 +21,7 @@ A macOS app for turning a **Novation Launchpad X** into a fully customizable sou
 - macOS 14.0+
 - Xcode 16.0+
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
-- Novation Launchpad X (optional — the app works without hardware)
+- Novation Launchpad (optional — the app works without hardware). Supported models: X, Mini MK3, Pro MK3, MK2, Pro
 
 ## Build
 
@@ -49,7 +49,7 @@ Views/Recording/— Audio recording dialog
 Utilities/      — Launchpad SysEx protocol, MIDI mapping, pixel font, audio formats
 ```
 
-`AppState` coordinates all managers via closure callbacks. Models are `Codable` and `Sendable` value types. Grid positions map to MIDI notes: `(row + 1) * 10 + (col + 1)` (Launchpad X programmer mode).
+`AppState` coordinates all managers via closure callbacks. Models are `Codable` and `Sendable` value types. Grid positions map to MIDI notes: `(row + 1) * 10 + (col + 1)` (programmer mode, all supported models). `LaunchpadModel` defines per-model SysEx constants; `MIDIManager` auto-detects the connected model.
 
 ## Dependencies
 

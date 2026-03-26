@@ -37,8 +37,8 @@ final class AppState {
         }
     }
 
-    /// Launchpad right-side button note used for XY mode toggle.
-    static let xyButtonNote: UInt8 = 19
+    /// Logical side button index for XY mode toggle (0 = bottom right button).
+    static let xyButtonIndex: Int = 0
 
     func setupMIDICallbacks() {
         midiManager.onPadPressed = { [weak self] position, velocity in
@@ -47,9 +47,9 @@ final class AppState {
         midiManager.onPadReleased = { [weak self] position in
             self?.handlePadRelease(position: position)
         }
-        midiManager.onSideButtonPressed = { [weak self] note in
+        midiManager.onSideButtonPressed = { [weak self] index in
             guard let self else { return }
-            if note == Self.xyButtonNote {
+            if index == Self.xyButtonIndex {
                 self.toggleXYMode()
             }
         }
@@ -79,11 +79,11 @@ final class AppState {
     /// Update the Launchpad XY side button LED to reflect current state.
     func updateXYButtonLED() {
         if case .xyPad = mode {
-            midiManager.setSideButtonLED(note: Self.xyButtonNote, color: LaunchpadColor(r: 0, g: 40, b: 127))
+            midiManager.setSideButtonLED(index: Self.xyButtonIndex, color: LaunchpadColor(r: 0, g: 40, b: 127))
         } else if canEnterXYMode {
-            midiManager.setSideButtonLED(note: Self.xyButtonNote, color: LaunchpadColor(r: 0, g: 10, b: 40))
+            midiManager.setSideButtonLED(index: Self.xyButtonIndex, color: LaunchpadColor(r: 0, g: 10, b: 40))
         } else {
-            midiManager.setSideButtonLED(note: Self.xyButtonNote, color: .off)
+            midiManager.setSideButtonLED(index: Self.xyButtonIndex, color: .off)
         }
     }
 
