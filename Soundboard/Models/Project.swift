@@ -72,7 +72,7 @@ struct Project: Codable, Identifiable, Sendable {
     static func copyForImport(from source: Project, newName: String) -> Project {
         var copy = source
         // Force new identity by re-encoding with modified fields
-        var pads = source.pads
+        let pads = source.pads
         // Pads keep their samples as-is (filenames stay the same)
         copy = Project(name: newName)
         copy.pads = pads
