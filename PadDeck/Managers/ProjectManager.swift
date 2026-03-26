@@ -12,8 +12,14 @@ final class ProjectManager {
     init(sampleStore: SampleStore) {
         self.sampleStore = sampleStore
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        self.projectsDirectory = appSupport
-            .appendingPathComponent("Soundboard", isDirectory: true)
+        // Migrate legacy data directory
+        let oldDir = appSupport.appendingPathComponent("Soundboard", isDirectory: true)
+        let newDir = appSupport.appendingPathComponent("PadDeck", isDirectory: true)
+        if FileManager.default.fileExists(atPath: oldDir.path) && !FileManager.default.fileExists(atPath: newDir.path) {
+            try? FileManager.default.moveItem(at: oldDir, to: newDir)
+        }
+
+        self.projectsDirectory = newDir
             .appendingPathComponent("Projects", isDirectory: true)
         try? FileManager.default.createDirectory(at: projectsDirectory, withIntermediateDirectories: true)
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

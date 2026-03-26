@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct SoundboardApp: App {
+struct PadDeckApp: App {
     @State private var appState = AppState()
 
     var body: some Scene {
@@ -23,7 +23,7 @@ struct SoundboardApp: App {
                 }
                 .preferredColorScheme(.dark)
                 .onOpenURL { url in
-                    guard url.pathExtension == "soundboard" else { return }
+                    guard url.pathExtension == "paddeck" else { return }
                     appState.handleOpenURL(url)
                 }
                 .alert(

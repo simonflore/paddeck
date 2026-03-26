@@ -2,7 +2,7 @@
 
 ## Context
 
-The soundboard app currently plays audio samples triggered by pads on a Novation Launchpad. Users want the ability to route a live microphone through a pad with selectable vocal effects (reverb, delay, pitch shift, distortion) and dry/wet control via the Launchpad's scene buttons. This enables live vocal performance alongside sample playback.
+The paddeck app currently plays audio samples triggered by pads on a Novation Launchpad. Users want the ability to route a live microphone through a pad with selectable vocal effects (reverb, delay, pitch shift, distortion) and dry/wet control via the Launchpad's scene buttons. This enables live vocal performance alongside sample playback.
 
 ## Requirements
 
@@ -235,7 +235,7 @@ else:
 
 ## Verification
 
-1. **Build**: `xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build`
+1. **Build**: `xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build`
 2. **Assign vocal pad**: Click empty pad → "Live Vocal" button → verify pad shows vocal config UI
 3. **Mic audio**: With headphones, activate vocal pad → verify mic audio passes through speakers
 4. **Effects**: Switch between reverb/delay/pitch/distortion → verify audible difference

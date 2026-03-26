@@ -1,6 +1,6 @@
-# Soundboard
+# PadDeck
 
-Multiplatform (macOS 14+ / iPadOS 17+) SwiftUI app for controlling Novation Launchpad controllers as a soundboard.
+Multiplatform (macOS 14+ / iPadOS 17+) SwiftUI app for controlling Novation Launchpad controllers as a live performance audio deck.
 Supports: Launchpad X, Mini MK3, Pro MK3, MK2, and Pro (original).
 
 ## Architecture
@@ -24,7 +24,7 @@ Supports: Launchpad X, Mini MK3, Pro MK3, MK2, and Pro (original).
 
 ## Project Structure
 
-- `App/` — SoundboardApp entry point, AppState
+- `App/` — PadDeckApp entry point, AppState
 - `Managers/` — MIDIManager, AudioEngine, SampleStore, ProjectManager, TextScroller
 - `Models/` — GridPosition, PadConfiguration, Project, Sample, LaunchpadColor, LaunchpadModel, PlayMode
 - `Views/Grid/` — ContentView, GridView, PadView
@@ -42,9 +42,9 @@ Supports: Launchpad X, Mini MK3, Pro MK3, MK2, and Pro (original).
 
 ## Project Sharing
 
-- `.soundboard` files are ZIP bundles containing `project.json` + `audio/` directory
-- UTType `com.soundboard.project` registered for native file association on both platforms
-- `SoundboardBundle` handles export (ZIP creation) and import (unzip + file copy)
+- `.paddeck` files are ZIP bundles containing `project.json` + `audio/` directory
+- UTType `com.paddeck.project` registered for native file association on both platforms
+- `PadDeckBundle` handles export (ZIP creation) and import (unzip + file copy)
 - Import with name collision offers "Replace" or "Keep Both"
 - ZIPFoundation dependency for cross-platform ZIP handling
 

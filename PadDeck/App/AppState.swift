@@ -11,7 +11,7 @@ final class AppState {
     var isEditMode = false
 
     // Bundle import state
-    var pendingImport: SoundboardBundle.ImportPreview?
+    var pendingImport: PadDeckBundle.ImportPreview?
     var showBundleImportAlert = false
     var bundleImportError: String?
     var showBundleImportError = false
@@ -270,7 +270,7 @@ final class AppState {
 
     func handleOpenURL(_ url: URL) {
         do {
-            let preview = try SoundboardBundle.previewImport(from: url, projectManager: projectManager)
+            let preview = try PadDeckBundle.previewImport(from: url, projectManager: projectManager)
             pendingImport = preview
             if preview.existingProject != nil {
                 showBundleImportAlert = true
@@ -283,10 +283,10 @@ final class AppState {
         }
     }
 
-    func finalizeBundleImport(mode: SoundboardBundle.ImportMode) {
+    func finalizeBundleImport(mode: PadDeckBundle.ImportMode) {
         guard let preview = pendingImport else { return }
         do {
-            let imported = try SoundboardBundle.finalizeImport(
+            let imported = try PadDeckBundle.finalizeImport(
                 preview: preview,
                 mode: mode,
                 sampleStore: sampleStore,

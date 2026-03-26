@@ -3,14 +3,14 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Soundboard needs microphone access to record audio samples.</string>
+	<string>PadDeck needs microphone access to record audio samples and process live vocal effects.</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
 			<key>UTTypeIdentifier</key>
-			<string>com.soundboard.project</string>
+			<string>com.paddeck.project</string>
 			<key>UTTypeDescription</key>
-			<string>Soundboard Project</string>
+			<string>PadDeck Project</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
@@ -20,7 +20,7 @@
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>soundboard</string>
+					<string>paddeck</string>
 				</array>
 			</dict>
 		</dict>
@@ -31,12 +31,12 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>Soundboard Project</string>
+			<string>PadDeck Project</string>
 			<key>LSHandlerRank</key>
 			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.soundboard.project</string>
+				<string>com.paddeck.project</string>
 			</array>
 		</dict>
 	</array>

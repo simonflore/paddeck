@@ -212,7 +212,7 @@ final class MIDIManager {
     // MARK: - Private
 
     private func setupMIDI(initialScan: Bool) {
-        MIDIClientCreateWithBlock("Soundboard" as CFString, &midiClient) { [weak self] notification in
+        MIDIClientCreateWithBlock("PadDeck" as CFString, &midiClient) { [weak self] notification in
             let messageID = notification.pointee.messageID
             if messageID == .msgSetupChanged {
                 DispatchQueue.main.async {

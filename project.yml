@@ -1,6 +1,6 @@
-name: Soundboard
+name: PadDeck
 options:
-  bundleIdPrefix: com.soundboard
+  bundleIdPrefix: com.paddeck
   deploymentTarget:
     macOS: "14.0"
     iOS: "17.0"
@@ -16,18 +16,18 @@ packages:
     from: "0.9.0"
 
 targets:
-  Soundboard:
+  PadDeck:
     type: application
     supportedDestinations: [macOS, iOS]
     sources:
-      - path: Soundboard
+      - path: PadDeck
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.soundboard.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.paddeck.app
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
-        INFOPLIST_FILE: Soundboard/Info.plist
-        CODE_SIGN_ENTITLEMENTS: Soundboard/Soundboard.entitlements
+        INFOPLIST_FILE: PadDeck/Info.plist
+        CODE_SIGN_ENTITLEMENTS: PadDeck/PadDeck.entitlements
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         IPHONEOS_DEPLOYMENT_TARGET: "17.0"
@@ -39,4 +39,4 @@ targets:
         product: DSWaveformImageViews
       - package: ZIPFoundation
     entitlements:
-      path: Soundboard/Soundboard.entitlements
+      path: PadDeck/PadDeck.entitlements

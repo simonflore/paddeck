@@ -171,7 +171,7 @@ struct SettingsView: View {
                 } label: {
                     HStack {
                         Image(systemName: "square.and.arrow.down")
-                        Text("Import .soundboard File")
+                        Text("Import .paddeck File")
                     }
                 }
             }
@@ -179,8 +179,8 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .fileExporter(
             isPresented: $isExporting,
-            document: SoundboardExportDocument(url: exportURL),
-            contentType: SoundboardBundle.projectType,
+            document: PadDeckExportDocument(url: exportURL),
+            contentType: PadDeckBundle.projectType,
             defaultFilename: exportURL?.deletingPathExtension().lastPathComponent ?? "Project"
         ) { result in
             // Clean up temp file after export
@@ -191,7 +191,7 @@ struct SettingsView: View {
         }
         .fileImporter(
             isPresented: $isImportPickerPresented,
-            allowedContentTypes: [SoundboardBundle.projectType, .zip],
+            allowedContentTypes: [PadDeckBundle.projectType, .zip],
             allowsMultipleSelection: false
         ) { result in
             guard case .success(let urls) = result, let url = urls.first else { return }
@@ -201,15 +201,15 @@ struct SettingsView: View {
 
     private func exportProject(_ meta: ProjectMetadata) {
         guard let project = try? appState.projectManager.load(id: meta.id) else { return }
-        guard let url = try? SoundboardBundle.export(project: project, sampleStore: appState.sampleStore) else { return }
+        guard let url = try? PadDeckBundle.export(project: project, sampleStore: appState.sampleStore) else { return }
         exportURL = url
         isExporting = true
     }
 }
 
 /// Wrapper for `.fileExporter` — reads the temp ZIP file as raw data.
-struct SoundboardExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [SoundboardBundle.projectType] }
+struct PadDeckExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [PadDeckBundle.projectType] }
 
     let data: Data
 

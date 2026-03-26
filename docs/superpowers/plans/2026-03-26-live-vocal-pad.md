@@ -15,14 +15,14 @@
 ### Task 1: Add New Model Types
 
 **Files:**
-- Create: `Soundboard/Models/VocalEffect.swift`
-- Create: `Soundboard/Models/VocalActivationMode.swift`
-- Create: `Soundboard/Models/VocalPadConfig.swift`
+- Create: `PadDeck/Models/VocalEffect.swift`
+- Create: `PadDeck/Models/VocalActivationMode.swift`
+- Create: `PadDeck/Models/VocalPadConfig.swift`
 
 - [ ] **Step 1: Create VocalEffect enum**
 
 ```swift
-// Soundboard/Models/VocalEffect.swift
+// PadDeck/Models/VocalEffect.swift
 import Foundation
 
 enum VocalEffect: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -56,7 +56,7 @@ enum VocalEffect: String, Codable, CaseIterable, Identifiable, Sendable {
 - [ ] **Step 2: Create VocalActivationMode enum**
 
 ```swift
-// Soundboard/Models/VocalActivationMode.swift
+// PadDeck/Models/VocalActivationMode.swift
 import Foundation
 
 enum VocalActivationMode: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -84,7 +84,7 @@ enum VocalActivationMode: String, Codable, CaseIterable, Identifiable, Sendable 
 - [ ] **Step 3: Create VocalPadConfig struct**
 
 ```swift
-// Soundboard/Models/VocalPadConfig.swift
+// PadDeck/Models/VocalPadConfig.swift
 import Foundation
 
 struct VocalPadConfig: Codable, Sendable {
@@ -106,13 +106,13 @@ struct VocalPadConfig: Codable, Sendable {
 
 - [ ] **Step 4: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Soundboard/Models/VocalEffect.swift Soundboard/Models/VocalActivationMode.swift Soundboard/Models/VocalPadConfig.swift
+git add PadDeck/Models/VocalEffect.swift PadDeck/Models/VocalActivationMode.swift PadDeck/Models/VocalPadConfig.swift
 git commit -m "feat: add VocalEffect, VocalActivationMode, and VocalPadConfig model types"
 ```
 
@@ -121,12 +121,12 @@ git commit -m "feat: add VocalEffect, VocalActivationMode, and VocalPadConfig mo
 ### Task 2: Update PadConfiguration and Project
 
 **Files:**
-- Modify: `Soundboard/Models/PadConfiguration.swift`
-- Modify: `Soundboard/Models/Project.swift`
+- Modify: `PadDeck/Models/PadConfiguration.swift`
+- Modify: `PadDeck/Models/Project.swift`
 
 - [ ] **Step 1: Add vocalConfig to PadConfiguration**
 
-In `Soundboard/Models/PadConfiguration.swift`, add the `vocalConfig` property, update `isEmpty`, and add `isVocalPad`. Update both initializers to accept `vocalConfig`:
+In `PadDeck/Models/PadConfiguration.swift`, add the `vocalConfig` property, update `isEmpty`, and add `isVocalPad`. Update both initializers to accept `vocalConfig`:
 
 ```swift
 struct PadConfiguration: Codable, Identifiable, Sendable {
@@ -166,7 +166,7 @@ struct PadConfiguration: Codable, Identifiable, Sendable {
 
 - [ ] **Step 2: Update Project.swapPads to include vocalConfig**
 
-In `Soundboard/Models/Project.swift`, update the `swapPads` method at line 61 to pass `vocalConfig`:
+In `PadDeck/Models/Project.swift`, update the `swapPads` method at line 61 to pass `vocalConfig`:
 
 ```swift
     mutating func swapPads(_ a: GridPosition, _ b: GridPosition) {
@@ -181,13 +181,13 @@ In `Soundboard/Models/Project.swift`, update the `swapPads` method at line 61 to
 
 - [ ] **Step 3: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add Soundboard/Models/PadConfiguration.swift Soundboard/Models/Project.swift
+git add PadDeck/Models/PadConfiguration.swift PadDeck/Models/Project.swift
 git commit -m "feat: add vocalConfig to PadConfiguration, update swapPads"
 ```
 
@@ -196,16 +196,16 @@ git commit -m "feat: add vocalConfig to PadConfiguration, update swapPads"
 ### Task 3: Remove XY Mode
 
 **Files:**
-- Modify: `Soundboard/Models/AppMode.swift`
-- Modify: `Soundboard/App/AppState.swift`
-- Modify: `Soundboard/Managers/AudioEngine.swift`
-- Modify: `Soundboard/Views/Grid/GridView.swift`
-- Modify: `Soundboard/Views/Grid/ContentView.swift`
-- Modify: `Soundboard/Views/Grid/PadView.swift`
+- Modify: `PadDeck/Models/AppMode.swift`
+- Modify: `PadDeck/App/AppState.swift`
+- Modify: `PadDeck/Managers/AudioEngine.swift`
+- Modify: `PadDeck/Views/Grid/GridView.swift`
+- Modify: `PadDeck/Views/Grid/ContentView.swift`
+- Modify: `PadDeck/Views/Grid/PadView.swift`
 
 - [ ] **Step 1: Simplify AppMode**
 
-Replace the entire contents of `Soundboard/Models/AppMode.swift` with:
+Replace the entire contents of `PadDeck/Models/AppMode.swift` with:
 
 ```swift
 import Foundation
@@ -217,7 +217,7 @@ enum AppMode: Equatable {
 
 - [ ] **Step 2: Remove XY mode from AppState**
 
-In `Soundboard/App/AppState.swift`:
+In `PadDeck/App/AppState.swift`:
 
 1. Remove `static let xyButtonIndex: Int = 0` (line 41)
 
@@ -252,7 +252,7 @@ In `Soundboard/App/AppState.swift`:
 
 - [ ] **Step 3: Remove XY-only methods from AudioEngine**
 
-In `Soundboard/Managers/AudioEngine.swift`, remove these methods that were only used by XY mode:
+In `PadDeck/Managers/AudioEngine.swift`, remove these methods that were only used by XY mode:
 
 - `setPitch(at:cents:)` (lines 111-113)
 - `setRate(at:rate:)` (lines 116-118)
@@ -262,7 +262,7 @@ In `Soundboard/Managers/AudioEngine.swift`, remove these methods that were only 
 
 - [ ] **Step 4: Remove XY overlay from GridView**
 
-In `Soundboard/Views/Grid/GridView.swift`, remove the entire `.overlay` block that renders the XY HUD (lines 23-61):
+In `PadDeck/Views/Grid/GridView.swift`, remove the entire `.overlay` block that renders the XY HUD (lines 23-61):
 
 ```swift
         .overlay {
@@ -276,7 +276,7 @@ Remove it entirely (the block from `.overlay {` at line 23 through the closing `
 
 - [ ] **Step 5: Remove XY button and references from ContentView**
 
-In `Soundboard/Views/Grid/ContentView.swift`:
+In `PadDeck/Views/Grid/ContentView.swift`:
 
 1. Remove the `isXYMode` computed property (lines 6-9)
 2. Remove the `canEnterXY` computed property (lines 11-13)
@@ -285,17 +285,17 @@ In `Soundboard/Views/Grid/ContentView.swift`:
 
 - [ ] **Step 6: Remove updateXYButtonLED() call from PadView**
 
-In `Soundboard/Views/Grid/PadView.swift`, line 127: remove `appState.updateXYButtonLED()`.
+In `PadDeck/Views/Grid/PadView.swift`, line 127: remove `appState.updateXYButtonLED()`.
 
 - [ ] **Step 7: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add Soundboard/Models/AppMode.swift Soundboard/App/AppState.swift Soundboard/Managers/AudioEngine.swift Soundboard/Views/Grid/GridView.swift Soundboard/Views/Grid/ContentView.swift Soundboard/Views/Grid/PadView.swift
+git add PadDeck/Models/AppMode.swift PadDeck/App/AppState.swift PadDeck/Managers/AudioEngine.swift PadDeck/Views/Grid/GridView.swift PadDeck/Views/Grid/ContentView.swift PadDeck/Views/Grid/PadView.swift
 git commit -m "refactor: remove XY performance pad mode entirely"
 ```
 
@@ -304,7 +304,7 @@ git commit -m "refactor: remove XY performance pad mode entirely"
 ### Task 4: Add Mic Chain to AudioEngine
 
 **Files:**
-- Modify: `Soundboard/Managers/AudioEngine.swift`
+- Modify: `PadDeck/Managers/AudioEngine.swift`
 
 - [ ] **Step 1: Add mic chain properties**
 
@@ -440,13 +440,13 @@ Add these public methods to AudioEngine:
 
 - [ ] **Step 5: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add Soundboard/Managers/AudioEngine.swift
+git add PadDeck/Managers/AudioEngine.swift
 git commit -m "feat: add mic chain with pre-attached vocal effect nodes"
 ```
 
@@ -455,7 +455,7 @@ git commit -m "feat: add mic chain with pre-attached vocal effect nodes"
 ### Task 5: Add Vocal Pad Logic to AppState
 
 **Files:**
-- Modify: `Soundboard/App/AppState.swift`
+- Modify: `PadDeck/App/AppState.swift`
 
 - [ ] **Step 1: Add vocal pad properties**
 
@@ -699,13 +699,13 @@ In `updatePad(_:at:)`, add effect syncing when a vocal pad's config changes. Aft
 
 - [ ] **Step 9: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add Soundboard/App/AppState.swift Soundboard/Views/Grid/ContentView.swift
+git add PadDeck/App/AppState.swift PadDeck/Views/Grid/ContentView.swift
 git commit -m "feat: add vocal pad press/release logic and dry/wet scene buttons"
 ```
 
@@ -714,7 +714,7 @@ git commit -m "feat: add vocal pad press/release logic and dry/wet scene buttons
 ### Task 6: Vocal Pad UI in PadDetailView
 
 **Files:**
-- Modify: `Soundboard/Views/PadDetail/PadDetailView.swift`
+- Modify: `PadDeck/Views/PadDetail/PadDetailView.swift`
 
 - [ ] **Step 1: Add vocal pad detail section**
 
@@ -1029,13 +1029,13 @@ The existing `dropDestination` on PadDetailView's body handles file drops. When 
 
 - [ ] **Step 8: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add Soundboard/Views/PadDetail/PadDetailView.swift
+git add PadDeck/Views/PadDetail/PadDetailView.swift
 git commit -m "feat: add vocal pad configuration UI and live vocal assignment"
 ```
 
@@ -1044,7 +1044,7 @@ git commit -m "feat: add vocal pad configuration UI and live vocal assignment"
 ### Task 7: Add Mic Gain to SettingsView
 
 **Files:**
-- Modify: `Soundboard/Views/Settings/SettingsView.swift`
+- Modify: `PadDeck/Views/Settings/SettingsView.swift`
 
 - [ ] **Step 1: Add Microphone section to SettingsView**
 
@@ -1112,13 +1112,13 @@ Add the `audioTab` computed property:
 
 - [ ] **Step 2: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add Soundboard/Views/Settings/SettingsView.swift
+git add PadDeck/Views/Settings/SettingsView.swift
 git commit -m "feat: add microphone gain slider to settings"
 ```
 
@@ -1127,7 +1127,7 @@ git commit -m "feat: add microphone gain slider to settings"
 ### Task 8: Update PadView for Vocal Pads
 
 **Files:**
-- Modify: `Soundboard/Views/Grid/PadView.swift`
+- Modify: `PadDeck/Views/Grid/PadView.swift`
 
 - [ ] **Step 1: Update pad content to show mic icon for vocal pads**
 
@@ -1203,13 +1203,13 @@ In PadView's `importFile(url:)` method (lines 201-212), add `vocalConfig = nil`:
 
 - [ ] **Step 3: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add Soundboard/Views/Grid/PadView.swift
+git add PadDeck/Views/Grid/PadView.swift
 git commit -m "feat: show mic icon on vocal pads in grid view"
 ```
 
@@ -1218,7 +1218,7 @@ git commit -m "feat: show mic icon on vocal pads in grid view"
 ### Task 9: Add LaunchpadColor Vocal Default
 
 **Files:**
-- Modify: `Soundboard/Models/LaunchpadColor.swift`
+- Modify: `PadDeck/Models/LaunchpadColor.swift`
 
 - [ ] **Step 1: Add vocal color constant**
 
@@ -1241,13 +1241,13 @@ In `PadDetailView.assignVocalPad()`:
 
 - [ ] **Step 3: Build to verify**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | tail -5`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | tail -5`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add Soundboard/Models/LaunchpadColor.swift Soundboard/Views/PadDetail/PadDetailView.swift
+git add PadDeck/Models/LaunchpadColor.swift PadDeck/Views/PadDetail/PadDetailView.swift
 git commit -m "feat: add LaunchpadColor.vocal default for vocal pads"
 ```
 
@@ -1257,13 +1257,13 @@ git commit -m "feat: add LaunchpadColor.vocal default for vocal pads"
 
 - [ ] **Step 1: Clean build**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodegen generate && xcodebuild -scheme Soundboard -configuration Debug clean build 2>&1 | tail -10`
+Run: `cd /Users/simonflore/Code/paddeck && xcodegen generate && xcodebuild -scheme PadDeck -configuration Debug clean build 2>&1 | tail -10`
 Expected: BUILD SUCCEEDED
 
 - [ ] **Step 2: Verify no compiler warnings related to changes**
 
-Run: `cd /Users/simonflore/Code/soundboard && xcodebuild -scheme Soundboard -configuration Debug build 2>&1 | grep -i "warning:" | grep -v "DSWaveformImage" | head -20`
-Expected: No warnings from Soundboard source files
+Run: `cd /Users/simonflore/Code/paddeck && xcodebuild -scheme PadDeck -configuration Debug build 2>&1 | grep -i "warning:" | grep -v "DSWaveformImage" | head -20`
+Expected: No warnings from PadDeck source files
 
 - [ ] **Step 3: Smoke test checklist**
 
@@ -1282,19 +1282,19 @@ Launch the app and manually verify:
 ## File Summary
 
 **New files (3):**
-- `Soundboard/Models/VocalEffect.swift`
-- `Soundboard/Models/VocalActivationMode.swift`
-- `Soundboard/Models/VocalPadConfig.swift`
+- `PadDeck/Models/VocalEffect.swift`
+- `PadDeck/Models/VocalActivationMode.swift`
+- `PadDeck/Models/VocalPadConfig.swift`
 
 **Modified files (9):**
-- `Soundboard/Models/PadConfiguration.swift` — add `vocalConfig`, `isVocalPad`, update `isEmpty`
-- `Soundboard/Models/Project.swift` — update `swapPads` to include `vocalConfig`
-- `Soundboard/Models/AppMode.swift` — remove `xyPad` case
-- `Soundboard/Models/LaunchpadColor.swift` — add `.vocal` constant
-- `Soundboard/Managers/AudioEngine.swift` — add mic chain, effect nodes, control methods; remove XY-only methods
-- `Soundboard/App/AppState.swift` — remove XY mode; add vocal pad press/release, dry/wet scene buttons, mic gain
-- `Soundboard/Views/Grid/GridView.swift` — remove XY overlay
-- `Soundboard/Views/Grid/ContentView.swift` — remove XY button, update Stop All
-- `Soundboard/Views/Grid/PadView.swift` — add vocal pad icon, clear vocalConfig on file drop
-- `Soundboard/Views/PadDetail/PadDetailView.swift` — vocal pad config UI, generic PlayModeButton, assign vocal button
-- `Soundboard/Views/Settings/SettingsView.swift` — add Audio tab with mic gain slider
+- `PadDeck/Models/PadConfiguration.swift` — add `vocalConfig`, `isVocalPad`, update `isEmpty`
+- `PadDeck/Models/Project.swift` — update `swapPads` to include `vocalConfig`
+- `PadDeck/Models/AppMode.swift` — remove `xyPad` case
+- `PadDeck/Models/LaunchpadColor.swift` — add `.vocal` constant
+- `PadDeck/Managers/AudioEngine.swift` — add mic chain, effect nodes, control methods; remove XY-only methods
+- `PadDeck/App/AppState.swift` — remove XY mode; add vocal pad press/release, dry/wet scene buttons, mic gain
+- `PadDeck/Views/Grid/GridView.swift` — remove XY overlay
+- `PadDeck/Views/Grid/ContentView.swift` — remove XY button, update Stop All
+- `PadDeck/Views/Grid/PadView.swift` — add vocal pad icon, clear vocalConfig on file drop
+- `PadDeck/Views/PadDetail/PadDetailView.swift` — vocal pad config UI, generic PlayModeButton, assign vocal button
+- `PadDeck/Views/Settings/SettingsView.swift` — add Audio tab with mic gain slider

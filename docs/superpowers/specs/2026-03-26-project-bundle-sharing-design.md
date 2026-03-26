@@ -1,13 +1,13 @@
 # Project Bundle Sharing
 
-Export and import self-contained `.soundboard` project bundles for sharing across devices and users.
+Export and import self-contained `.paddeck` project bundles for sharing across devices and users.
 
 ## Bundle Format
 
-A `.soundboard` file is a ZIP archive:
+A `.paddeck` file is a ZIP archive:
 
 ```
-MyProject.soundboard (zip)
+MyProject.paddeck (zip)
 ├── project.json        ← Project struct (same format as ProjectManager)
 └── audio/
     ├── kick.wav
@@ -19,28 +19,28 @@ All audio files referenced by the project's pad configurations are included. Fac
 
 ## UTType Registration
 
-- Identifier: `com.soundboard.project`
+- Identifier: `com.paddeck.project`
 - Conforms to: `public.data`, `public.zip-archive`
-- Extension: `.soundboard`
-- Description: "Soundboard Project"
+- Extension: `.paddeck`
+- Description: "PadDeck Project"
 
 Registered in Info.plist so both platforms handle the file natively (double-click on macOS, tap in Files on iOS, AirDrop on both).
 
 ## Export Flow
 
 1. User taps **Export** button next to a project in Settings > Projects tab.
-2. `SoundboardBundle.export(project:sampleStore:)` creates a temp directory, writes `project.json`, copies all referenced audio files into `audio/`, and zips the result into a `.soundboard` file.
-3. On macOS: `NSSavePanel` with suggested filename `{project.name}.soundboard`.
+2. `PadDeckBundle.export(project:sampleStore:)` creates a temp directory, writes `project.json`, copies all referenced audio files into `audio/`, and zips the result into a `.paddeck` file.
+3. On macOS: `NSSavePanel` with suggested filename `{project.name}.paddeck`.
 4. On iOS: `ShareLink` / `UIActivityViewController` with the temp file URL.
 5. Temp file is cleaned up after the share completes.
 
 ## Import Flow
 
-1. User opens a `.soundboard` file via:
+1. User opens a `.paddeck` file via:
    - Finder / Files app (UTType registration triggers `.onOpenURL`)
    - AirDrop
-   - **Import** button in Settings > Projects tab (presents file picker filtered to `.soundboard`)
-2. `SoundboardBundle.import(from:sampleStore:projectManager:)`:
+   - **Import** button in Settings > Projects tab (presents file picker filtered to `.paddeck`)
+2. `PadDeckBundle.import(from:sampleStore:projectManager:)`:
    a. Unzips to a temp directory.
    b. Decodes `project.json` into a `Project` struct.
    c. Checks for name collision via `projectManager.findByName(_:)`.
@@ -53,24 +53,24 @@ Registered in Info.plist so both platforms handle the file natively (double-clic
 ## Error Handling
 
 - Invalid/corrupt ZIP: alert "Could not open project file."
-- Missing `project.json` inside ZIP: alert "This file doesn't contain a valid Soundboard project."
+- Missing `project.json` inside ZIP: alert "This file doesn't contain a valid PadDeck project."
 - Missing audio files referenced by pads: import succeeds but affected pads show as empty (graceful degradation, same as if a sample file were deleted locally).
 
 ## Files to Create
 
 | File | Purpose |
 |------|---------|
-| `Managers/SoundboardBundle.swift` | `export()` and `import()` static methods handling ZIP pack/unpack, file copying, duplicate detection |
+| `Managers/PadDeckBundle.swift` | `export()` and `import()` static methods handling ZIP pack/unpack, file copying, duplicate detection |
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `Info.plist` | Add exported/imported UTType declaration for `com.soundboard.project` |
+| `Info.plist` | Add exported/imported UTType declaration for `com.paddeck.project` |
 | `project.yml` | Add UTType info in settings if needed by XcodeGen |
 | `ProjectManager.swift` | Add `findByName(_:) -> ProjectMetadata?` helper |
 | `SettingsView.swift` | Add Export/Import buttons per project in Projects tab |
-| `SoundboardApp.swift` | Add `.onOpenURL` handler to trigger import when a `.soundboard` file is opened |
+| `PadDeckApp.swift` | Add `.onOpenURL` handler to trigger import when a `.paddeck` file is opened |
 | `AppState.swift` | Add `importProject(from:)` method coordinating the import flow + state for import alert |
 
 ## Bundle Size Considerations

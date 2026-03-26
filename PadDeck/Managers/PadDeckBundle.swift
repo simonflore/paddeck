@@ -2,10 +2,10 @@ import Foundation
 import ZIPFoundation
 import UniformTypeIdentifiers
 
-enum SoundboardBundle {
+enum PadDeckBundle {
 
-    /// Custom UTType for `.soundboard` project bundles.
-    static let projectType = UTType("com.soundboard.project")!
+    /// Custom UTType for `.paddeck` project bundles.
+    static let projectType = UTType("com.paddeck.project")!
 
     enum BundleError: LocalizedError {
         case couldNotOpenFile
@@ -17,7 +17,7 @@ enum SoundboardBundle {
             case .couldNotOpenFile:
                 return "Could not open project file."
             case .invalidBundle:
-                return "This file doesn't contain a valid Soundboard project."
+                return "This file doesn't contain a valid PadDeck project."
             case .exportFailed(let reason):
                 return "Export failed: \(reason)"
             }
@@ -26,11 +26,11 @@ enum SoundboardBundle {
 
     // MARK: - Export
 
-    /// Creates a `.soundboard` ZIP bundle in a temp directory and returns its URL.
+    /// Creates a `.paddeck` ZIP bundle in a temp directory and returns its URL.
     /// Caller is responsible for cleanup after sharing completes.
     static func export(project: Project, sampleStore: SampleStore) throws -> URL {
         let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("soundboard-export-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("paddeck-export-\(UUID().uuidString)", isDirectory: true)
         let stageDir = tempDir.appendingPathComponent("stage", isDirectory: true)
         let audioDir = stageDir.appendingPathComponent("audio", isDirectory: true)
         try FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
@@ -55,7 +55,7 @@ enum SoundboardBundle {
         let safeName = project.name
             .replacingOccurrences(of: "/", with: "-")
             .replacingOccurrences(of: ":", with: "-")
-        let zipURL = tempDir.appendingPathComponent("\(safeName).soundboard")
+        let zipURL = tempDir.appendingPathComponent("\(safeName).paddeck")
         try FileManager.default.zipItem(at: stageDir, to: zipURL)
 
         // Clean up staging directory (keep the ZIP)
@@ -74,7 +74,7 @@ enum SoundboardBundle {
         let existingProject: ProjectMetadata?
     }
 
-    /// Reads a `.soundboard` bundle and returns a preview (project + temp audio dir).
+    /// Reads a `.paddeck` bundle and returns a preview (project + temp audio dir).
     /// Does NOT copy files or save the project — call `finalizeImport` after user confirms.
     static func previewImport(
         from url: URL,
@@ -84,7 +84,7 @@ enum SoundboardBundle {
         defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
 
         let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("soundboard-import-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("paddeck-import-\(UUID().uuidString)", isDirectory: true)
 
         // Unzip
         do {
