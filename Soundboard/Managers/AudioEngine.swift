@@ -10,7 +10,6 @@ final class AudioEngine {
     private let engine = AVAudioEngine()
     private let mixer = AVAudioMixerNode()
     private var playerNodes: [GridPosition: AVAudioPlayerNode] = [:]
-    private var timePitchNodes: [GridPosition: AVAudioUnitTimePitch] = [:]
     private let sampleStore: SampleStore
     private var fileCache: [String: AVAudioFile] = [:]
     private var loopBufferCache: [String: AVAudioPCMBuffer] = [:]
@@ -104,16 +103,14 @@ final class AudioEngine {
 
     func stop(at position: GridPosition) {
         playerNodes[position]?.stop()
-        timePitchNodes[position]?.reset()
         activePads.remove(position)
     }
 
     func stopAll() {
-        for (pos, player) in playerNodes {
+        for (_, player) in playerNodes {
             player.stop()
-            timePitchNodes[pos]?.reset()
-            activePads.remove(pos)
         }
+        activePads.removeAll()
     }
 
     func isPlaying(at position: GridPosition) -> Bool {
@@ -297,13 +294,9 @@ final class AudioEngine {
     private func playerNode(for position: GridPosition) -> AVAudioPlayerNode {
         if let existing = playerNodes[position] { return existing }
         let node = AVAudioPlayerNode()
-        let timePitch = AVAudioUnitTimePitch()
         engine.attach(node)
-        engine.attach(timePitch)
-        engine.connect(node, to: timePitch, format: nil)
-        engine.connect(timePitch, to: mixer, format: nil)
+        engine.connect(node, to: mixer, format: nil)
         playerNodes[position] = node
-        timePitchNodes[position] = timePitch
         return node
     }
 

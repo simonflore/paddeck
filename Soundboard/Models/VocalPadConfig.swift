@@ -1,6 +1,6 @@
 import Foundation
 
-struct VocalPadConfig: Codable, Sendable {
+struct VocalPadConfig: Codable, Equatable, Sendable {
     var effect: VocalEffect
     var activationMode: VocalActivationMode
     var dryWetMix: Float

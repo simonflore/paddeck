@@ -8,20 +8,16 @@ final class AppState {
     var isRecordingPresented = false
     var showImportAlert = false
     var importAlertMessage = ""
-    var mode: AppMode = .normal
     var isEditMode = false
 
     var isMicActive = false
+    private(set) var vocalPadPosition: GridPosition?
     var micGain: Float {
         get { UserDefaults.standard.float(forKey: "micGain") }
         set {
             UserDefaults.standard.set(newValue, forKey: "micGain")
             audioEngine.setMicGain(newValue)
         }
-    }
-
-    var vocalPadPosition: GridPosition? {
-        project.pads.first(where: { $0.isVocalPad })?.position
     }
 
     let midiManager: MIDIManager
@@ -51,6 +47,7 @@ final class AppState {
         }
 
         audioEngine.setMicGain(micGain)
+        vocalPadPosition = project.pads.first(where: { $0.isVocalPad })?.position
     }
 
     func setupMIDICallbacks() {
@@ -83,6 +80,20 @@ final class AppState {
 
     func saveProject() {
         try? projectManager.save(project)
+    }
+
+    private func refreshVocalPadPosition() {
+        vocalPadPosition = project.pads.first(where: { $0.isVocalPad })?.position
+    }
+
+    func switchProject(_ newProject: Project) {
+        deactivateMic()
+        audioEngine.stopAll()
+        project = newProject
+        selectedPad = nil
+        refreshVocalPadPosition()
+        midiManager.syncLEDs(with: project, playingPads: audioEngine.activePads)
+        renderDryWetMeter()
     }
 
     // MARK: - Pad Interaction
@@ -175,6 +186,7 @@ final class AppState {
     func updatePad(_ config: PadConfiguration, at position: GridPosition) {
         let oldSample = project.pad(at: position).sample
         project.setPad(config, at: position)
+        refreshVocalPadPosition()
         midiManager.setLED(at: position, color: config.color)
 
         // Invalidate old sample cache if sample changed
@@ -257,6 +269,8 @@ final class AppState {
         return Int(round(config.dryWetMix * 6.0))
     }
 
+    private var dryWetSaveWork: DispatchWorkItem?
+
     private func handleDryWetButton(index: Int) {
         guard let pos = vocalPadPosition else { return }
         var pad = project.pad(at: pos)
@@ -273,9 +287,15 @@ final class AppState {
 
         config.dryWetMix = Float(step) / 6.0
         pad.vocalConfig = config
-        updatePad(pad, at: pos)
+        project.setPad(pad, at: pos)
         audioEngine.setVocalDryWet(config.dryWetMix)
         renderDryWetMeter()
+
+        // Debounce save — rapid button presses only persist once settled
+        dryWetSaveWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.saveProject() }
+        dryWetSaveWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
     func renderDryWetMeter() {

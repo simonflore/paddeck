@@ -1,7 +1,7 @@
 import AVFoundation
 import Foundation
 
-/// Generates built-in synth samples as WAV files for instant use with XY mode.
+/// Generates built-in synth samples as WAV files for use as factory presets.
 enum FactorySampleGenerator {
     struct FactoryPreset {
         let name: String
