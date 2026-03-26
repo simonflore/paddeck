@@ -63,8 +63,8 @@ struct Project: Codable, Identifiable, Sendable {
         let padA = pads[a.id]
         let padB = pads[b.id]
         // Swap contents (sample, color, playMode, volume) but keep positions fixed
-        pads[a.id] = PadConfiguration(position: a, sample: padB.sample, color: padB.color, playMode: padB.playMode, volume: padB.volume, emoji: padB.emoji)
-        pads[b.id] = PadConfiguration(position: b, sample: padA.sample, color: padA.color, playMode: padA.playMode, volume: padA.volume, emoji: padA.emoji)
+        pads[a.id] = PadConfiguration(position: a, sample: padB.sample, color: padB.color, playMode: padB.playMode, volume: padB.volume, emoji: padB.emoji, vocalConfig: padB.vocalConfig)
+        pads[b.id] = PadConfiguration(position: b, sample: padA.sample, color: padA.color, playMode: padA.playMode, volume: padA.volume, emoji: padA.emoji, vocalConfig: padA.vocalConfig)
         modifiedAt = Date()
     }
 }
