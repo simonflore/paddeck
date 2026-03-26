@@ -48,6 +48,10 @@ final class ProjectManager {
         scanProjects()
     }
 
+    func findByName(_ name: String) -> ProjectMetadata? {
+        availableProjects.first { $0.name == name }
+    }
+
     // MARK: - Private
 
     private func projectURL(for id: UUID) -> URL {
