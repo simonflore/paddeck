@@ -28,25 +28,26 @@ final class TextScroller {
                     try Task.checkCancellation()
 
                     let active = activePads()
-                    var entries: [(note: UInt8, r: UInt8, g: UInt8, b: UInt8)] = []
+                    var entries: [(position: GridPosition, color: LaunchpadColor)] = []
                     for row in 0..<8 {
                         for col in 0..<8 {
                             let sourceCol = frame + col
                             let isLit = sourceCol < columns.count && row < columns[sourceCol].count && columns[sourceCol][row]
                             let pos = GridPosition(row: 7 - row, column: col)
+                            let color: LaunchpadColor
                             if isLit {
-                                entries.append((note: pos.midiNote, r: textColor.r, g: textColor.g, b: textColor.b))
+                                color = textColor
                             } else if active.contains(pos) {
-                                let c = project.pad(at: pos).color
-                                entries.append((note: pos.midiNote, r: c.r, g: c.g, b: c.b))
+                                color = project.pad(at: pos).color
                             } else {
                                 let c = project.pad(at: pos).color
-                                entries.append((note: pos.midiNote, r: c.r / 4, g: c.g / 4, b: c.b / 4))
+                                color = LaunchpadColor(r: c.r / 4, g: c.g / 4, b: c.b / 4)
                             }
+                            entries.append((position: pos, color: color))
                         }
                     }
 
-                    midiManager?.sendBatchLEDs(entries: entries)
+                    midiManager?.sendBatchLEDs(entries)
 
                     try await Task.sleep(for: .milliseconds(80))
                 }

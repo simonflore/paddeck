@@ -361,15 +361,14 @@ final class AppState {
 
     func renderInstrumentGrid(_ type: InstrumentType) {
         let layout = type.noteLayout
-        var entries: [(note: UInt8, r: UInt8, g: UInt8, b: UInt8)] = []
+        var entries: [(position: GridPosition, color: LaunchpadColor)] = []
         for row in 0..<8 {
             for col in 0..<8 {
                 let pos = GridPosition(row: row, column: col)
-                let color = layout.colorForPosition(pos)
-                entries.append((note: pos.midiNote, r: color.r, g: color.g, b: color.b))
+                entries.append((position: pos, color: layout.colorForPosition(pos)))
             }
         }
-        midiManager.sendBatchLEDs(entries: entries)
+        midiManager.sendBatchLEDs(entries)
 
         // Exit button: light both top-right (CC 98) and side-top (note 89) red
         let exitColor = LaunchpadColor(r: 127, g: 20, b: 20)

@@ -1,6 +1,6 @@
 import Foundation
 
-/// All supported 8×8 Novation Launchpad models with RGB SysEx capability.
+/// All supported 8×8 Novation Launchpad models.
 enum LaunchpadModel: String, CaseIterable, Sendable {
     // Modern protocol (0x03 RGB format, 0x0E programmer mode)
     case launchpadX
@@ -11,9 +11,15 @@ enum LaunchpadModel: String, CaseIterable, Sendable {
     case mk2
     case proOriginal
 
+    // Legacy protocol (original Launchpad Mini / Mini MK2 — non-RGB, no programmer mode,
+    // XY note layout, velocity-encoded red/amber/green LEDs).
+    case miniLegacy
+
     // MARK: - SysEx Constants
 
     /// Device-specific byte in the SysEx header `[00 20 29 02 <id>]`.
+    /// Legacy Mini does not use the modern SysEx header — returns 0 and callers
+    /// should consult `hasProgrammerMode` / `usesShortMessageLEDs` instead.
     var deviceId: UInt8 {
         switch self {
         case .launchpadX:  return 0x0C
@@ -21,6 +27,7 @@ enum LaunchpadModel: String, CaseIterable, Sendable {
         case .proMK3:      return 0x0E
         case .mk2:         return 0x18
         case .proOriginal: return 0x10
+        case .miniLegacy:  return 0x00
         }
     }
 
@@ -31,6 +38,7 @@ enum LaunchpadModel: String, CaseIterable, Sendable {
         case .proMK3:      return "Launchpad Pro MK3"
         case .mk2:         return "Launchpad MK2"
         case .proOriginal: return "Launchpad Pro"
+        case .miniLegacy:  return "Launchpad Mini"
         }
     }
 
@@ -43,6 +51,8 @@ enum LaunchpadModel: String, CaseIterable, Sendable {
             return [0x22, 0x00]
         case .proOriginal:
             return [0x21, 0x01]
+        case .miniLegacy:
+            return []
         }
     }
 
@@ -55,19 +65,35 @@ enum LaunchpadModel: String, CaseIterable, Sendable {
             return [0x22, 0x01]
         case .proOriginal:
             return [0x21, 0x00]
+        case .miniLegacy:
+            return []
         }
     }
 
     /// Modern models use `0x03` lighting command; intermediate models use `0x0B`.
+    /// Legacy Mini doesn't use SysEx for LEDs at all.
     var isModernProtocol: Bool {
         switch self {
         case .launchpadX, .miniMK3, .proMK3: return true
         case .mk2, .proOriginal:             return false
+        case .miniLegacy:                    return false
         }
+    }
+
+    /// True if the model supports programmer-mode SysEx (11–88 note layout + RGB).
+    /// Legacy Mini uses its default XY note layout and short-message LED updates.
+    var hasProgrammerMode: Bool {
+        self != .miniLegacy
+    }
+
+    /// True if LEDs are set via short MIDI messages (Note On / CC) rather than SysEx.
+    var usesShortMessageLEDs: Bool {
+        self == .miniLegacy
     }
 
     /// SysEx command byte for pulsing palette LED.
     /// Modern: `0x03` (lighting) with type `0x02`; Intermediate: `0x28`.
+    /// Not applicable for legacy Mini (uses Note On channel 1 for flashing).
     var pulsingCommand: UInt8 {
         isModernProtocol ? 0x03 : 0x28
     }
@@ -91,7 +117,7 @@ enum LaunchpadModel: String, CaseIterable, Sendable {
         if lower.contains("lpx") || lower.contains("launchpad x") {
             return .launchpadX
         }
-        // MK2 — check before generic "launchpad"
+        // MK2 full-size (RGB) — check before generic "launchpad" / "mini"
         if lower.contains("launchpad mk2") || lower.contains("lpmk2") {
             return .mk2
         }
@@ -99,11 +125,13 @@ enum LaunchpadModel: String, CaseIterable, Sendable {
         if lower.contains("launchpad pro") {
             return .proOriginal
         }
-        // Fallback: any device with "launchpad" in the name — assume modern protocol
-        if lower.contains("launchpad") {
-            return .launchpadX
+        // Legacy Mini (original Mini / Mini MK2, non-RGB, USB-B) — "Launchpad Mini"
+        // without MK3 suffix. Must come after the MK3 check above.
+        if lower.contains("launchpad mini") || lower.contains("launchpad s") {
+            return .miniLegacy
         }
-
+        // Fallback: unrecognized "launchpad" — refuse to guess rather than
+        // silently misdetect and send the wrong protocol.
         return nil
     }
 }

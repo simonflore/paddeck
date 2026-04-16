@@ -97,7 +97,7 @@ struct SettingsView: View {
                         HStack {
                             Text(device.name)
                             Spacer()
-                            if appState.midiManager.deviceName == device.name && appState.midiManager.isConnected {
+                            if appState.midiManager.connectedDeviceID == device.id {
                                 Text("Connected")
                                     .foregroundStyle(.secondary)
                             } else {
