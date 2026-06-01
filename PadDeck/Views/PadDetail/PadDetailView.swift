@@ -379,6 +379,87 @@ struct PadDetailView: View {
                         }
                     }
 
+                    // Sync (loop pads only)
+                    if pad.playMode == .loop {
+                        DetailSection(title: "SYNC", icon: "metronome") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Toggle("Synced Loop", isOn: Binding(
+                                    get: { pad.syncConfig != nil },
+                                    set: { on in
+                                        var p = pad
+                                        p.syncConfig = on ? PadSyncConfig() : nil
+                                        appState.updatePad(p, at: position)
+                                    }
+                                ))
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .tint(accentColor)
+
+                                if let sync = pad.syncConfig {
+                                    // Per-pad quantize override (nil ⇒ Global).
+                                    Picker("Quantize", selection: Binding(
+                                        get: { sync.quantizeOverride },
+                                        set: { newValue in
+                                            var p = pad
+                                            p.syncConfig?.quantizeOverride = newValue
+                                            appState.updatePad(p, at: position)
+                                        }
+                                    )) {
+                                        Text("Global").tag(Optional<Quantization>.none)
+                                        ForEach(Quantization.allCases) { q in
+                                            Text(q.displayName).tag(Optional(q))
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .font(.system(size: 12, design: .rounded))
+
+                                    // Loop length: bars and beats steppers.
+                                    Stepper(value: Binding(
+                                        get: { sync.loopLength.bars },
+                                        set: { newBars in
+                                            var p = pad
+                                            p.syncConfig?.loopLength.bars = max(0, newBars)
+                                            appState.updatePad(p, at: position)
+                                        }
+                                    ), in: 0...64) {
+                                        Text("Length: \(sync.loopLength.bars) bars")
+                                            .font(.system(size: 12, design: .rounded))
+                                    }
+
+                                    Stepper(value: Binding(
+                                        get: { sync.loopLength.beats },
+                                        set: { newBeats in
+                                            var p = pad
+                                            p.syncConfig?.loopLength.beats = newBeats
+                                            appState.updatePad(p, at: position)
+                                        }
+                                    ), in: 0...(appState.transportSettings.timeSignature.beatsPerBar - 1)) {
+                                        Text("+ \(sync.loopLength.beats) beats")
+                                            .font(.system(size: 12, design: .rounded))
+                                    }
+
+                                    if let warning = loopLengthWarning(for: pad) {
+                                        Label(warning, systemImage: "exclamationmark.triangle.fill")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.orange)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+
+                                    // Phase 2 scaffold — disabled.
+                                    Toggle("Time-Stretch (Phase 2)", isOn: Binding(
+                                        get: { sync.timeStretchEnabled },
+                                        set: { newValue in
+                                            var p = pad
+                                            p.syncConfig?.timeStretchEnabled = newValue
+                                            appState.updatePad(p, at: position)
+                                        }
+                                    ))
+                                    .font(.system(size: 12, design: .rounded))
+                                    .disabled(true)
+                                }
+                            }
+                        }
+                    }
+
                     // Volume
                     DetailSection(title: "VOLUME", icon: "speaker.wave.2") {
                         HStack(spacing: 8) {
@@ -640,6 +721,24 @@ struct PadDetailView: View {
         padConfig.vocalConfig = nil
         padConfig.color = type.defaultColor
         appState.updatePad(padConfig, at: position)
+    }
+
+    private func loopLengthWarning(for pad: PadConfiguration) -> String? {
+        guard let sync = pad.syncConfig, let sample = pad.sample else { return nil }
+        let duration = sample.effectiveDuration
+        let bpm = appState.transportClock.isLocked
+            ? appState.transportClock.displayBPM
+            : appState.transportSettings.manualBPM
+        guard bpm > 0, duration > 0 else { return nil }
+        let ts = appState.transportSettings.timeSignature
+        let secPerTick = 60.0 / (bpm * 24.0)
+        let expected = Double(sync.loopLength.ticks(in: ts)) * secPerTick
+        guard expected > 0 else { return nil }
+        if abs(duration / expected - 1.0) > 0.05 {
+            return String(format: "File is %.2fs but %d bars %d beats at %.0f BPM = %.2fs. Set the intended length.",
+                          duration, sync.loopLength.bars, sync.loopLength.beats, bpm, expected)
+        }
+        return nil
     }
 
     private var volumeIcon: String {
