@@ -59,6 +59,7 @@ struct ContentView: View {
 
     private var gridPanel: some View {
         VStack(spacing: 0) {
+            TransportBarView()
             GridView()
                 .frame(maxHeight: .infinity)
 
