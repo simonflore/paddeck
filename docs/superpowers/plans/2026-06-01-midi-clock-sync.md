@@ -1983,6 +1983,14 @@ git commit -m "test: full clock-sync suite green; integration verified" || echo 
 
 ## Notes for the implementer
 
+- **Local signing/test-host caveats (apply to every `xcodebuild` command):** the app
+  target has no development team configured, so append
+  `CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""` to all
+  `build`/`test` invocations. The `PadDeckTests` target also overrides `TEST_HOST`/
+  `BUNDLE_LOADER` to the macOS bundle layout (`PadDeck.app/Contents/MacOS/PadDeck`)
+  because the multiplatform app target otherwise yields an iOS-style host path. Both
+  are already in `project.yml`. Example test command:
+  `xcodebuild -project PadDeck.xcodeproj -scheme PadDeck -destination 'platform=macOS' test -only-testing:PadDeckTests/<Suite> CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""`
 - After adding **any** new file under `PadDeck/` or `PadDeckTests/`, run `xcodegen generate` before building/testing — XcodeGen globs sources at generate time.
 - `docs/` is gitignored in this repo but specs/plans are force-added by convention; source files under `PadDeck/`/`PadDeckTests/` commit normally (the `-f` on test/spec/plan paths is only needed for ignored paths — plain `git add` works for source).
 - All clock math is pure and unit-tested; CoreMIDI input, audio scheduling, and SwiftUI are verified build-and-run, consistent with the existing codebase.

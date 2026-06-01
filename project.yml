@@ -41,4 +41,21 @@ targets:
     entitlements:
       path: PadDeck/PadDeck.entitlements
     scheme:
-      testTargets: []
+      testTargets:
+        - PadDeckTests
+
+  PadDeckTests:
+    type: bundle.unit-test
+    supportedDestinations: [macOS]
+    sources:
+      - path: PadDeckTests
+    dependencies:
+      - target: PadDeck
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.paddeck.tests
+        GENERATE_INFOPLIST_FILE: YES
+        # App target is multiplatform, so XcodeGen derives an iOS-style host path.
+        # Override with the macOS bundle layout for the macOS-only test target.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PadDeck.app/Contents/MacOS/PadDeck"
+        BUNDLE_LOADER: "$(TEST_HOST)"
