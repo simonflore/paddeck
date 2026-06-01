@@ -114,6 +114,73 @@ struct SettingsView: View {
                     appState.midiManager.scanForDevices()
                 }
             }
+
+            Section("MIDI Clock") {
+                Picker("Clock Source", selection: Binding(
+                    get: { appState.transportSettings.clockSourceName ?? "" },
+                    set: { name in
+                        appState.transportSettings.clockSourceName = name.isEmpty ? nil : name
+                        appState.clockReceiver.preferredSourceName = name.isEmpty ? nil : name
+                        if name.isEmpty {
+                            appState.clockReceiver.disconnect()
+                        } else if let src = appState.clockReceiver.availableSources.first(where: { $0.name == name }) {
+                            appState.clockReceiver.connect(to: src)
+                        }
+                    }
+                )) {
+                    Text("None").tag("")
+                    ForEach(appState.clockReceiver.availableSources) { src in
+                        Text(src.name).tag(src.name)
+                    }
+                }
+
+                Toggle("Follow External Clock", isOn: Binding(
+                    get: { appState.transportSettings.followExternalClock },
+                    set: { appState.transportSettings.followExternalClock = $0 }
+                ))
+
+                // Time signature (default 4/4).
+                Stepper(value: Binding(
+                    get: { appState.transportSettings.timeSignature.beatsPerBar },
+                    set: { appState.transportSettings.timeSignature.beatsPerBar = max(1, $0) }
+                ), in: 1...16) {
+                    Text("Beats per Bar: \(appState.transportSettings.timeSignature.beatsPerBar)")
+                }
+                Picker("Beat Unit", selection: Binding(
+                    get: { appState.transportSettings.timeSignature.beatUnit },
+                    set: { appState.transportSettings.timeSignature.beatUnit = $0 }
+                )) {
+                    ForEach([2, 4, 8, 16], id: \.self) { unit in
+                        Text("1/\(unit)").tag(unit)
+                    }
+                }
+
+                Toggle("Ignore Start/Stop", isOn: Binding(
+                    get: { appState.transportSettings.ignoreStartStop },
+                    set: { appState.transportSettings.ignoreStartStop = $0 }
+                ))
+
+                Toggle("Stop Synced Loops Immediately", isOn: Binding(
+                    get: { appState.transportSettings.stopImmediately },
+                    set: { appState.transportSettings.stopImmediately = $0 }
+                ))
+
+                HStack {
+                    Text("Latency Offset")
+                    Slider(value: Binding(
+                        get: { appState.transportSettings.latencyOffsetMs },
+                        set: { appState.transportSettings.latencyOffsetMs = $0 }
+                    ), in: -50...50, step: 1)
+                    Text("\(Int(appState.transportSettings.latencyOffsetMs)) ms")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 56, alignment: .trailing)
+                }
+
+                Button("Rescan MIDI Sources") {
+                    appState.clockReceiver.scan()
+                }
+            }
         }
         .formStyle(.grouped)
     }
