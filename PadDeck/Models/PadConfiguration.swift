@@ -9,11 +9,13 @@ struct PadConfiguration: Codable, Identifiable, Sendable {
     var emoji: String?
     var vocalConfig: VocalPadConfig?
     var instrumentConfig: InstrumentConfig?
+    var syncConfig: PadSyncConfig?
 
     var id: Int { position.id }
     var isEmpty: Bool { sample == nil && vocalConfig == nil && instrumentConfig == nil }
     var isVocalPad: Bool { vocalConfig != nil }
     var isInstrumentPad: Bool { instrumentConfig != nil }
+    var isSynced: Bool { syncConfig != nil }
 
     init(position: GridPosition) {
         self.position = position
@@ -24,9 +26,10 @@ struct PadConfiguration: Codable, Identifiable, Sendable {
         self.emoji = nil
         self.vocalConfig = nil
         self.instrumentConfig = nil
+        self.syncConfig = nil
     }
 
-    init(position: GridPosition, sample: Sample?, color: LaunchpadColor, playMode: PlayMode, volume: Float, emoji: String? = nil, vocalConfig: VocalPadConfig? = nil, instrumentConfig: InstrumentConfig? = nil) {
+    init(position: GridPosition, sample: Sample?, color: LaunchpadColor, playMode: PlayMode, volume: Float, emoji: String? = nil, vocalConfig: VocalPadConfig? = nil, instrumentConfig: InstrumentConfig? = nil, syncConfig: PadSyncConfig? = nil) {
         self.position = position
         self.sample = sample
         self.color = color
@@ -35,5 +38,6 @@ struct PadConfiguration: Codable, Identifiable, Sendable {
         self.emoji = emoji
         self.vocalConfig = vocalConfig
         self.instrumentConfig = instrumentConfig
+        self.syncConfig = syncConfig
     }
 }
