@@ -57,6 +57,17 @@ final class AppState {
     let projectManager: ProjectManager
     let textScroller: TextScroller
     let instrumentEngine: InstrumentEngine
+    let clockReceiver: ClockReceiver
+    let transportClock: TransportClock
+    let syncScheduler: SyncScheduler
+
+    var transportSettings: TransportSettings {
+        didSet {
+            transportSettings.save()
+            transportClock.settings = transportSettings
+            transportClock.applyTimeSignature(transportSettings.timeSignature)
+        }
+    }
 
     init() {
         UserDefaults.standard.register(defaults: ["micGain": Float(1.0), "duckExternalAudio": true])
@@ -69,6 +80,18 @@ final class AppState {
         self.audioEngine = AudioEngine(sampleStore: store)
         self.textScroller = TextScroller(midiManager: midi)
         self.instrumentEngine = InstrumentEngine(audioEngine: self.audioEngine)
+
+        let loadedSettings = TransportSettings.load()
+        let clock = TransportClock()
+        clock.settings = loadedSettings
+        let receiver = ClockReceiver()
+        receiver.transport = clock
+        receiver.preferredSourceName = loadedSettings.clockSourceName
+        self.transportSettings = loadedSettings
+        self.transportClock = clock
+        self.clockReceiver = receiver
+        self.syncScheduler = SyncScheduler(transport: clock, audioEngine: self.audioEngine)
+
         self.project = projectMgr.loadLastProject() ?? Project(name: "Default")
 
         // Generate factory synth samples on first launch (no-op if already on disk)
@@ -82,6 +105,11 @@ final class AppState {
         audioEngine.setMicGain(micGain)
         audioEngine.duckingEnabled = duckExternalAudio
         vocalPadPosition = project.pads.first(where: { $0.isVocalPad })?.position
+
+        transportClock.applyTimeSignature(loadedSettings.timeSignature)
+        clockReceiver.scan()
+        setupSyncCallbacks()
+        transportClock.startMonitoring()
     }
 
     func setupMIDICallbacks() {
@@ -125,6 +153,61 @@ final class AppState {
         }
     }
 
+    private func setupSyncCallbacks() {
+        syncScheduler.settings = { [weak self] in self?.transportSettings ?? TransportSettings() }
+
+        syncScheduler.onQueued = { [weak self] position in
+            // Blinking amber while queued.
+            self?.midiManager.setLEDPulsing(at: position, colorIndex: 9)
+        }
+        syncScheduler.onLaunched = { [weak self] position in
+            self?.midiManager.setLED(at: position, color: .playing)
+        }
+        syncScheduler.onStopped = { [weak self] position in
+            guard let self else { return }
+            let pad = self.project.pad(at: position)
+            self.midiManager.setLED(at: position, color: pad.color)
+        }
+
+        transportClock.onBeat = { [weak self] in
+            guard let self else { return }
+            self.syncScheduler.onBeatTick()
+            self.pulsePlayingSyncedPads()
+        }
+        transportClock.onStatusChanged = { [weak self] _ in
+            self?.updateBeatEventGating()
+        }
+        transportClock.onResync = { [weak self] in
+            self?.resyncPlayingSyncedPads()
+        }
+    }
+
+    /// Re-align currently-playing synced loops to the downbeat (called on Start/SPP/drift).
+    private func resyncPlayingSyncedPads() {
+        guard transportClock.isLocked else { return }
+        for pos in syncScheduler.playing {
+            let pad = project.pad(at: pos)
+            guard pad.isSynced else { continue }
+            syncScheduler.queueLaunch(pad) // reschedules to the next boundary
+        }
+    }
+
+    /// Enable beat callbacks only while locked AND something synced is active.
+    private func updateBeatEventGating() {
+        transportClock.wantsBeatEvents = transportClock.isLocked && syncScheduler.hasActivity
+    }
+
+    /// Brief bright flash on the beat for each playing synced pad.
+    private func pulsePlayingSyncedPads() {
+        for pos in syncScheduler.playing {
+            midiManager.setLED(at: pos, color: LaunchpadColor(r: 127, g: 127, b: 127))
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+                guard let self, self.syncScheduler.playing.contains(pos) else { return }
+                self.midiManager.setLED(at: pos, color: .playing)
+            }
+        }
+    }
+
     func connectLaunchpad() {
         midiManager.scanForDevices()
     }
@@ -148,6 +231,8 @@ final class AppState {
         }
         deactivateMic()
         audioEngine.stopAll()
+        syncScheduler.cancelAll()
+        updateBeatEventGating()
         audioEngine.invalidateAllCaches()
         project = newProject
         selectedPad = nil
@@ -215,11 +300,23 @@ final class AppState {
         case .oneShotStopOnRelease:
             audioEngine.play(pad: pad, velocity: velocity)
         case .loop:
-            if audioEngine.isPlaying(at: position) {
-                audioEngine.stop(at: position)
-                midiManager.setLED(at: position, color: pad.color)
+            if audioEngine.isPlaying(at: position) || syncScheduler.queued[position] != nil {
+                // Stop: quantized for synced+locked, immediate otherwise.
+                if pad.isSynced && transportClock.isLocked {
+                    syncScheduler.queueStop(pad)
+                } else {
+                    audioEngine.stop(at: position)
+                    midiManager.setLED(at: position, color: pad.color)
+                }
+                updateBeatEventGating()
                 return
+            } else if pad.isSynced && transportClock.isLocked {
+                // Quantized launch.
+                syncScheduler.queueLaunch(pad)
+                updateBeatEventGating()
+                return // LED handled by onQueued/onLaunched
             } else {
+                // Free-run (synced pad with no clock, or plain loop).
                 audioEngine.play(pad: pad, velocity: velocity)
             }
         }
@@ -469,6 +566,8 @@ final class AppState {
             ))
             deactivateMic()
             audioEngine.stopAll()
+            syncScheduler.cancelAll()
+            updateBeatEventGating()
             midiManager.syncLEDs(with: project, playingPads: audioEngine.activePads)
             renderDryWetMeter()
             renderTopButtonLEDs()
