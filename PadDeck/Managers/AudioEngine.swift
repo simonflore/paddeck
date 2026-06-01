@@ -125,6 +125,71 @@ final class AudioEngine {
         #endif
     }
 
+    /// Total output latency in seconds (engine + session/buffer), for sync compensation.
+    var outputLatencySeconds: Double {
+        var latency = engine.outputNode.presentationLatency
+        #if os(iOS)
+        let session = AVAudioSession.sharedInstance()
+        latency += session.outputLatency + session.ioBufferDuration
+        #endif
+        return latency
+    }
+
+    /// Schedule a looped pad to start `afterSeconds` from now, sample-accurately.
+    /// `afterSeconds` must already be latency-compensated by the caller.
+    func scheduleSyncedLoop(pad: PadConfiguration, afterSeconds: Double) {
+        guard let sample = pad.sample, let file = cachedFile(for: sample) else { return }
+
+        let key = loopBufferKey(for: sample)
+        let buffer: AVAudioPCMBuffer
+        if let cached = loopBufferCache[key] {
+            buffer = cached
+        } else {
+            let sr = file.processingFormat.sampleRate
+            let startFrame = AVAudioFramePosition(sample.trimStart * sr)
+            let endFrame = sample.trimEnd.map { AVAudioFramePosition($0 * sr) } ?? file.length
+            let frameCount = AVAudioFrameCount(endFrame - startFrame)
+            guard frameCount > 0, let b = loadBuffer(from: file, startFrame: startFrame, frameCount: frameCount) else { return }
+            loopBufferCache[key] = b
+            buffer = b
+        }
+
+        let player = playerNode(for: pad.position)
+        player.stop()
+        player.volume = pad.volume
+
+        // Ensure the node's render clock is advancing so lastRenderTime is valid.
+        if !player.isPlaying { player.play() }
+
+        let sr = player.outputFormat(forBus: 0).sampleRate
+        let when: AVAudioTime?
+        if let render = player.lastRenderTime, render.isSampleTimeValid, afterSeconds > 0 {
+            let frames = AVAudioFramePosition(afterSeconds * sr)
+            when = AVAudioTime(sampleTime: render.sampleTime + frames, atRate: sr)
+        } else {
+            when = nil // launch immediately if we can't anchor
+        }
+
+        player.scheduleBuffer(buffer, at: when, options: .loops, completionHandler: nil)
+        player.play()
+
+        let wasEmpty = activePads.isEmpty
+        activePads.insert(pad.position)
+        playingStateChanged.send(pad.position)
+        #if os(iOS)
+        if wasEmpty { updateDuckingState() }
+        #endif
+    }
+
+    /// Stop a synced loop after `afterSeconds` (quantized stop). 0 ⇒ immediate.
+    func stopSyncedLoop(at position: GridPosition, afterSeconds: Double) {
+        guard afterSeconds > 0.005 else { stop(at: position); return }
+        let deadline = DispatchTime.now() + afterSeconds
+        DispatchQueue.main.asyncAfter(deadline: deadline) { [weak self] in
+            self?.stop(at: position)
+        }
+    }
+
     func stop(at position: GridPosition) {
         playerNodes[position]?.stop()
         activePads.remove(position)
